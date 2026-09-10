@@ -1,4 +1,25 @@
-# TUẦN 1 – PHÂN TÍCH BÀI TOÁN & KIẾN TRÚC HỆ THỐNG IOT
+# 🛡️ TUẦN 1 — PHÂN TÍCH BÀI TOÁN & KIẾN TRÚC HỆ THỐNG IoT
+
+> [← README](../README.md) · [📚 Danh sách báo cáo hằng tuần](../README.md#bao-cao-hang-tuan)
+
+## Mục lục
+
+- [1. Problem Statement – Phân tích bài toán](#section-1)
+- [2. Actors và Use Cases](#section-2)
+- [3. Yêu cầu hệ thống](#section-3)
+- [4. Input – Processing – Output](#section-4)
+- [5. Logic tự động V1](#section-5)
+- [6. Kiến trúc IoT 4 tầng – Version 1](#section-6)
+- [7. MQTT Topic Map – Draft V1](#section-7)
+- [8. BOM dự kiến](#section-8)
+- [9. Test Scenarios được định nghĩa từ Tuần 1](#section-9)
+- [10. Phân công nhóm N19](#section-10)
+- [11. Definition of Done – Tuần 1](#section-11)
+- [12. Đối sánh với rubric 100 điểm](#section-12)
+- [13. Quyết định cần giữ cố định khi sang Tuần 2](#section-13)
+- [14. Đầu vào sẵn sàng cho Tuần 2 – Simulation Tầng 1](#section-14)
+
+---
 
 ## 0. Thông tin đề tài
 
@@ -16,6 +37,7 @@
 
 ---
 
+<a id="section-1"></a>
 # 1. Problem Statement – Phân tích bài toán
 
 ## 1.1. Bối cảnh
@@ -80,6 +102,7 @@ Xây dựng hệ thống IoT mô phỏng có khả năng:
 
 ---
 
+<a id="section-2"></a>
 # 2. Actors và Use Cases
 
 ## 2.1. Actors
@@ -140,6 +163,7 @@ Xây dựng hệ thống IoT mô phỏng có khả năng:
 
 ---
 
+<a id="section-3"></a>
 # 3. Yêu cầu hệ thống
 
 ## 3.1. Functional Requirements
@@ -175,6 +199,7 @@ Xây dựng hệ thống IoT mô phỏng có khả năng:
 
 ---
 
+<a id="section-4"></a>
 # 4. Input – Processing – Output
 
 ## 4.1. Input
@@ -208,6 +233,7 @@ Node-RED thực hiện:
 
 ---
 
+<a id="section-5"></a>
 # 5. Logic tự động V1
 
 ## 5.1. State Machine đề xuất
@@ -295,6 +321,7 @@ publish event when state changes
 
 ---
 
+<a id="section-6"></a>
 # 6. Kiến trúc IoT 4 tầng – Version 1
 
 ## 6.1. Kiến trúc logic
@@ -396,6 +423,7 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
 
 ---
 
+<a id="section-7"></a>
 # 7. MQTT Topic Map – Draft V1
 
 > Topic map chính thức sẽ hoàn thiện ở Tuần 4. Tuần 1 chỉ chốt naming convention để kiến trúc nhất quán.
@@ -446,6 +474,7 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
 
 ---
 
+<a id="section-8"></a>
 # 8. BOM dự kiến
 
 ## 8.1. BOM phần cứng / mô phỏng
@@ -480,6 +509,7 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
 
 ---
 
+<a id="section-9"></a>
 # 9. Test Scenarios được định nghĩa từ Tuần 1
 
 | ID | Scenario | Input | Expected Output |
@@ -495,6 +525,7 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
 
 ---
 
+<a id="section-10"></a>
 # 10. Phân công nhóm N19
 
 Theo cấu trúc nhóm 3 SV trong rubric, phân công primary như sau:
@@ -548,6 +579,7 @@ Mỗi thành viên phải tự giải thích được:
 
 ---
 
+<a id="section-11"></a>
 # 11. Definition of Done – Tuần 1
 
 Tuần 1 được xem là hoàn thành khi nhóm đạt đủ các điều kiện sau:
@@ -570,6 +602,7 @@ Tuần 1 được xem là hoàn thành khi nhóm đạt đủ các điều kiệ
 
 ---
 
+<a id="section-12"></a>
 # 12. Đối sánh với rubric 100 điểm
 
 Tuần 1 **không đồng nghĩa đã đạt các điểm bên dưới**, vì rubric chấm trên hệ thống chạy thật/simulation và evidence cuối kỳ. Tuy nhiên thiết kế Tuần 1 đã tạo nền tảng trực tiếp cho các hạng mục:
@@ -587,6 +620,7 @@ Tuần 1 **không đồng nghĩa đã đạt các điểm bên dưới**, vì ru
 
 ---
 
+<a id="section-13"></a>
 # 13. Quyết định cần giữ cố định khi sang Tuần 2
 
 1. **ESP32 là controller chính.**
@@ -602,6 +636,7 @@ Tuần 1 **không đồng nghĩa đã đạt các điểm bên dưới**, vì ru
 
 ---
 
+<a id="section-14"></a>
 # 14. Đầu vào sẵn sàng cho Tuần 2 – Simulation Tầng 1
 
 Sau tài liệu Tuần 1, Tuần 2 có thể bắt đầu ngay với các công việc:
