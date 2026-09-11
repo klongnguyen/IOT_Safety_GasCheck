@@ -15,10 +15,6 @@
 - [9. Test Scenarios được định nghĩa từ Tuần 1](#section-9)
 - [10. Phân công nhóm N19](#section-10)
 - [11. Definition of Done – Tuần 1](#section-11)
-- [12. Đối sánh với rubric 100 điểm](#section-12)
-- [13. Quyết định cần giữ cố định khi sang Tuần 2](#section-13)
-- [14. Đầu vào sẵn sàng cho Tuần 2 – Simulation Tầng 1](#section-14)
-
 ---
 
 ## 0. Thông tin đề tài
