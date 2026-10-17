@@ -27,7 +27,7 @@ Dự án xây dựng mô hình học tập dùng **MQ2** phát hiện tín hiệ
 <a id="kien-truc"></a>
 ## 2. Kiến trúc IoT 4 tầng
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
   subgraph L1["Tầng 1 — Sensing / Physical"]
     MQ2["MQ2 / nguồn tín hiệu giả lập"]
@@ -57,14 +57,14 @@ flowchart LR
   DB -->|"lệnh kiểm thử / yêu cầu reset"| NR
   NR -->|"publish cmd"| BROKER
   BROKER -->|"subscribe cmd"| ESP
-\`\`\`
+```
 
 **Safety rule cục bộ nằm ở ESP32**: đường truyền mạng không phải điều kiện để phát còi hoặc thay đổi LED. Node-RED và Dashboard không được gửi lệnh làm tắt cảnh báo nguy hiểm khi cảm biến vẫn báo mức nguy hiểm.
 
 <a id="mo-hinh-vat-ly"></a>
 ## 3. Mô hình vật lý và BOM
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
   MQ2["MQ2 (analog)"] -->|"ADC1 GPIO34"| ESP["ESP32 DevKit"]
   ESP -->|"GPIO25"| G["LED xanh + R 220–330Ω"]
@@ -76,7 +76,7 @@ flowchart TD
   TERM --> ESP
   TERM --> S
   TERM --> MQ2
-\`\`\`
+```
 
 | Thiết bị | Số lượng | Vai trò |
 |---|---:|---|
@@ -99,31 +99,31 @@ Sơ đồ GPIO là **đề xuất để triển khai**, chưa xác nhận trên 
 
 | Trạng thái | Đèn báo | Buzzer | Servo cửa sổ (demo) |
 |---|---|---|---|
-| \`NORMAL\` | Xanh | Tắt | Đóng |
-| \`WARNING\` | Vàng | Kêu ngắt quãng | Giữ vị trí đóng |
-| \`DANGER\` | Đỏ | Kêu liên tục | Mở |
-| \`RECOVERY\` | Vàng nhấp nháy | Theo chính sách cảnh báo chờ xác nhận | Giữ mở |
-| \`FAULT\` | Đỏ nhấp nháy | Mẫu báo lỗi riêng | Không ra lệnh tự đóng khi đang cảnh báo |
+| `NORMAL` | Xanh | Tắt | Đóng |
+| `WARNING` | Vàng | Kêu ngắt quãng | Giữ vị trí đóng |
+| `DANGER` | Đỏ | Kêu liên tục | Mở |
+| `RECOVERY` | Vàng nhấp nháy | Theo chính sách cảnh báo chờ xác nhận | Giữ mở |
+| `FAULT` | Đỏ nhấp nháy | Mẫu báo lỗi riêng | Không ra lệnh tự đóng khi đang cảnh báo |
 
 - ESP32 đọc MQ2 qua ADC1, lọc nhiễu và so sánh **ngưỡng thử nghiệm**; ngưỡng ADC mô phỏng **không phải ngưỡng nồng độ gas an toàn thực tế**.
 - Sử dụng hysteresis/debounce để tránh đảo trạng thái liên tục.
-- Khi vào \`DANGER\`, ưu tiên còi và LED; servo mô phỏng mở cửa sổ mini. Khi tín hiệu giảm, vào \`RECOVERY\`; chỉ về \`NORMAL\` sau khi giá trị ổn định và có xác nhận/reset theo thiết kế.
+- Khi vào `DANGER`, ưu tiên còi và LED; servo mô phỏng mở cửa sổ mini. Khi tín hiệu giảm, vào `RECOVERY`; chỉ về `NORMAL` sau khi giá trị ổn định và có xác nhận/reset theo thiết kế.
 - Mất Wi-Fi/MQTT: cảnh báo tại ESP32 vẫn hoạt động; gửi lại trạng thái mới khi mạng phục hồi.
-- Lỗi cảm biến: hiển thị \`FAULT\`, không mặc định coi mất tín hiệu là an toàn.
+- Lỗi cảm biến: hiển thị `FAULT`, không mặc định coi mất tín hiệu là an toàn.
 
 <a id="mqtt"></a>
 ## 5. Giao tiếp MQTT và ứng dụng (kế hoạch)
 
 | Topic | Hướng | Dữ liệu |
 |---|---|---|
-| \`gascheck/n19/telemetry\` | ESP32 → Broker | \`gas_raw\`, \`state\`, \`window\`, \`buzzer\` |
-| \`gascheck/n19/event\` | ESP32 → Broker | Sự kiện chuyển trạng thái, cảnh báo |
-| \`gascheck/n19/status\` | ESP32 → Broker | Online/offline, trạng thái đầu ra, lỗi |
-| \`gascheck/n19/cmd\` | Node-RED → ESP32 | \`REQUEST_RESET\`, \`TEST_ALARM\` có kiểm tra điều kiện |
+| `gascheck/n19/telemetry` | ESP32 → Broker | `gas_raw`, `state`, `window`, `buzzer` |
+| `gascheck/n19/event` | ESP32 → Broker | Sự kiện chuyển trạng thái, cảnh báo |
+| `gascheck/n19/status` | ESP32 → Broker | Online/offline, trạng thái đầu ra, lỗi |
+| `gascheck/n19/cmd` | Node-RED → ESP32 | `REQUEST_RESET`, `TEST_ALARM` có kiểm tra điều kiện |
 
 Payload mẫu:
 
-\`\`\`json
+```json
 {
   "device_id": "n19-gascheck-01",
   "gas_raw": 1200,
@@ -132,7 +132,7 @@ Payload mẫu:
   "buzzer": false,
   "led": "GREEN"
 }
-\`\`\`
+```
 
 Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đã triển khai phần mềm.
 

@@ -29,14 +29,14 @@ Dựng được luồng **MQ2 giả lập → ESP32 → 3 LED + buzzer + servo m
 | RECOVERY | ADC giảm, đủ kiểm tra ổn định nhưng chưa reset | Vàng nhấp nháy | Giữ trạng thái cảnh báo chờ xác nhận | Giữ mở |
 | FAULT | Không đọc hợp lệ/lỗi được mô phỏng | Đỏ nhấp nháy | Mẫu báo lỗi | Không tự cưỡng bức đóng |
 
-Ngưỡng **demo**: \`WARNING >= 1500\`, \`DANGER >= 2500\` (ADC 12-bit 0–4095), chỉ dùng để kiểm tra phần mềm; không tương ứng với ngưỡng khí an toàn thật. Bổ sung hysteresis/debounce để tránh nhấp nháy. Khi nguy hiểm đang tồn tại, lệnh RESET phải bị từ chối. Servo không tự đóng ngay sau khi giá trị giảm mà phải qua RECOVERY và xác nhận.
+Ngưỡng **demo**: `WARNING >= 1500`, `DANGER >= 2500` (ADC 12-bit 0–4095), chỉ dùng để kiểm tra phần mềm; không tương ứng với ngưỡng khí an toàn thật. Bổ sung hysteresis/debounce để tránh nhấp nháy. Khi nguy hiểm đang tồn tại, lệnh RESET phải bị từ chối. Servo không tự đóng ngay sau khi giá trị giảm mà phải qua RECOVERY và xác nhận.
 
 ## 4. Phân công nhóm
 
 ### Trình Quốc An — Sensing / Embedded
 
-1. Dựng mạch Wokwi và lưu \`simulation/diagram.json\`.
-2. Viết firmware: \`readGasADC()\`, \`filterGas()\`, \`classifyState()\`, \`setWindowPosition()\`, \`setBuzzerPattern()\`, \`updateLeds()\`.
+1. Dựng mạch Wokwi và lưu `simulation/diagram.json`.
+2. Viết firmware: `readGasADC()`, `filterGas()`, `classifyState()`, `setWindowPosition()`, `setBuzzerPattern()`, `updateLeds()`.
 3. Kiểm tra PWM servo và chu kỳ buzzer không xung đột; kiểm tra góc mở thật của cửa mini nếu có sa bàn.
 4. Tài liệu kết nối ghi rõ ESP32 chỉ nhận điện áp ADC phù hợp.
 
@@ -44,7 +44,7 @@ Ngưỡng **demo**: \`WARNING >= 1500\`, \`DANGER >= 2500\` (ADC 12-bit 0–4095
 
 1. Review pinout ADC1, GND, nguồn servo, bảo vệ ADC và LED.
 2. Chuẩn bị Serial telemetry JSON, ví dụ:
-   \`\`\`json
+   ```json
    {
      "device_id": "n19-gascheck-01",
      "gas_raw": 1100,
@@ -54,8 +54,8 @@ Ngưỡng **demo**: \`WARNING >= 1500\`, \`DANGER >= 2500\` (ADC 12-bit 0–4095
      "window": "CLOSED",
      "sensor_fault": false
    }
-   \`\`\`
-3. Draft topic \`gascheck/n19/telemetry\`, \`event\`, \`status\`, \`cmd\` cho tuần 4.
+   ```
+3. Draft topic `gascheck/n19/telemetry`, `event`, `status`, `cmd` cho tuần 4.
 4. Review lại tài liệu V2 và bằng chứng commit.
 
 ### Nguyễn Long Vỹ — Application / Automation & QA
@@ -83,10 +83,10 @@ Ngưỡng **demo**: \`WARNING >= 1500\`, \`DANGER >= 2500\` (ADC 12-bit 0–4095
 ## 6. Deliverables và Definition of Done
 
 - [ ] Link chạy Wokwi có kiểm thử.
-- [ ] \`simulation/diagram.json\` và cấu hình simulation phù hợp khi thực sự tạo.
-- [ ] Firmware trong \`esp32/src/\` hoặc đường dẫn thống nhất.
+- [ ] `simulation/diagram.json` và cấu hình simulation phù hợp khi thực sự tạo.
+- [ ] Firmware trong `esp32/src/` hoặc đường dẫn thống nhất.
 - [ ] [Pinout V2](wiring/Pinout_V2.md) được review và thử đối chiếu.
-- [ ] Bằng chứng \`evidence/w2/\` (ảnh, JSON log, bảng test pass/fail).
+- [ ] Bằng chứng `evidence/w2/` (ảnh, JSON log, bảng test pass/fail).
 - [ ] Servo mở cửa sổ ở DANGER; 3 LED và buzzer chạy đúng trạng thái.
 - [ ] Mất kết nối không ảnh hưởng tới cảnh báo local.
 - [ ] Không dùng khí gas thật để demo.

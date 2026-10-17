@@ -22,7 +22,7 @@
 Rò rỉ gas không giới hạn ở van: có thể từ thân bình, cổ bình, gioăng, ống, mối nối, bếp hoặc thiết bị chứa gas. Việc đóng một van ở sai vị trí **không bảo đảm** ngăn rò rỉ. Mục tiêu V2 vì vậy là:
 
 1. Phát hiện bất thường của tín hiệu MQ2 trong vùng giám sát.
-2. Phân mức \`NORMAL\`, \`WARNING\`, \`DANGER\`; phát tín hiệu cảnh báo **tại chỗ**.
+2. Phân mức `NORMAL`, `WARNING`, `DANGER`; phát tín hiệu cảnh báo **tại chỗ**.
 3. Mô phỏng mở cửa sổ mini bằng servo để minh họa cơ cấu thông thoáng, **không coi là biện pháp xử lý an toàn đã được kiểm định**.
 4. Gửi telemetry, sự kiện và trạng thái qua MQTT đến Node-RED; hiển thị Dashboard, gửi Telegram khi mạng khả dụng.
 5. Phát hiện lỗi cảm biến/mạng, khôi phục có kiểm soát, lưu log phục vụ demo.
@@ -58,7 +58,7 @@ Vị trí đặt đầu dò cho **thiết bị thực tế** còn phụ thuộc 
 
 ## 5. Sơ đồ vật lý logic
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
   MQ2["MQ2 (AO)"] -->|"ADC1 GPIO34, qua chia áp nếu AO > 3.3V"| ESP["ESP32"]
   ESP -->|"GPIO25"| LG["LED Xanh + R"]
@@ -73,7 +73,7 @@ flowchart LR
   GND["GND chung"] --- ESP
   GND --- SV
   GND --- MQ2
-\`\`\`
+```
 
 **Đây là sơ đồ khối kết nối, không phải sơ đồ điện thi công**. Xem [Pinout V2](wiring/Pinout_V2.md) để kiểm tra điện áp, mạch chia áp, mass và dòng tải.
 
@@ -81,25 +81,25 @@ flowchart LR
 
 | State | Điều kiện biểu diễn | LED | Buzzer | Cửa sổ mini |
 |---|---|---|---|---|
-| \`NORMAL\` | Tín hiệu MQ2 bình thường | Xanh | OFF | CLOSED |
-| \`WARNING\` | Tín hiệu MQ2 vượt ngưỡng cảnh báo | Vàng | Kêu ngắt quãng | CLOSED |
-| \`DANGER\` | Tín hiệu MQ2 vượt ngưỡng nguy hiểm | Đỏ | Kêu liên tục | OPEN |
-| \`RECOVERY\` | Gas giảm, chờ xác nhận | Vàng nhấp nháy | Tùy chính sách ACK, không im lặng như bình thường | OPEN |
-| \`FAULT\` | Lỗi cảm biến/đo, phát hiện bất thường | Đỏ nhấp nháy | Mẫu báo lỗi | Không cưỡng bức đóng cửa sổ khi chưa xác minh |
+| `NORMAL` | Tín hiệu MQ2 bình thường | Xanh | OFF | CLOSED |
+| `WARNING` | Tín hiệu MQ2 vượt ngưỡng cảnh báo | Vàng | Kêu ngắt quãng | CLOSED |
+| `DANGER` | Tín hiệu MQ2 vượt ngưỡng nguy hiểm | Đỏ | Kêu liên tục | OPEN |
+| `RECOVERY` | Gas giảm, chờ xác nhận | Vàng nhấp nháy | Tùy chính sách ACK, không im lặng như bình thường | OPEN |
+| `FAULT` | Lỗi cảm biến/đo, phát hiện bất thường | Đỏ nhấp nháy | Mẫu báo lỗi | Không cưỡng bức đóng cửa sổ khi chưa xác minh |
 
-**Priority:** \`FAULT\` và \`DANGER\` là các tình huống không được coi là \`NORMAL\`; trong demo có thể ưu tiên \`DANGER\` khi tín hiệu nguy hiểm còn hợp lệ, đồng thời gửi cờ lỗi riêng.
+**Priority:** `FAULT` và `DANGER` là các tình huống không được coi là `NORMAL`; trong demo có thể ưu tiên `DANGER` khi tín hiệu nguy hiểm còn hợp lệ, đồng thời gửi cờ lỗi riêng.
 
 - **Debounce/hysteresis:** ngưỡng cảnh báo và ngưỡng thoát cảnh báo tách biệt, tránh dao động bật/tắt.
-- **Latch nguy hiểm:** Khi \`DANGER\` xảy ra, lưu sự kiện; chuyển \`RECOVERY\` khi giá trị đã hạ và ổn định.
-- **Reset có điều kiện:** chỉ cho về \`NORMAL\` khi dữ liệu hợp lệ, ổn định và người dùng xác nhận; trong demo servo mới quay về đóng.
-- **Không override an toàn:** Lệnh từ mạng không được tắt còi hay đóng cửa sổ trong \`DANGER\` chỉ vì người dùng bấm nút trên Dashboard.
+- **Latch nguy hiểm:** Khi `DANGER` xảy ra, lưu sự kiện; chuyển `RECOVERY` khi giá trị đã hạ và ổn định.
+- **Reset có điều kiện:** chỉ cho về `NORMAL` khi dữ liệu hợp lệ, ổn định và người dùng xác nhận; trong demo servo mới quay về đóng.
+- **Không override an toàn:** Lệnh từ mạng không được tắt còi hay đóng cửa sổ trong `DANGER` chỉ vì người dùng bấm nút trên Dashboard.
 - **Giới hạn phát hiện lỗi:** MQ2 đơn lẻ không bảo đảm nhận ra mọi kiểu lỗi; các kiểm tra (ADC rail, mất mẫu, lỗi nguồn, boot) chỉ là heuristic cần test riêng.
 
-Ngưỡng thô ví dụ trong **Wokwi**: \`WARNING >= 1500\`, \`DANGER >= 2500\` trên dải ADC 0–4095, chỉ dùng kiểm thử luồng điều khiển, **không suy ra ppm hay mức cháy nổ thực**.
+Ngưỡng thô ví dụ trong **Wokwi**: `WARNING >= 1500`, `DANGER >= 2500` trên dải ADC 0–4095, chỉ dùng kiểm thử luồng điều khiển, **không suy ra ppm hay mức cháy nổ thực**.
 
 ## 7. Kiến trúc 4 tầng giữ nguyên
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
   subgraph L1["L1 Physical"]
     MQ["MQ2"] --> ESP["ESP32 Local Logic"]
@@ -122,7 +122,7 @@ flowchart LR
   DASH -->|"REQUEST_RESET / TEST_ALARM"| NODERED
   NODERED -->|"MQTT cmd"| MQTT
   MQTT -->|"ESP32 subscribe"| ESP
-\`\`\`
+```
 
 **Uplink:** MQ2 → ESP32 → Wi-Fi → MQTT Broker → Node-RED → Dashboard/Telegram.  
 **Downlink:** Dashboard/Node-RED → MQTT Broker → ESP32 → kiểm tra trạng thái → hành động được phép.
@@ -131,12 +131,12 @@ flowchart LR
 
 Topics:
 
-- \`gascheck/n19/telemetry\`: gas raw/filter, state, trạng thái actuator; QoS 0 khi phù hợp.
-- \`gascheck/n19/event\`: cảnh báo và transition có id/timestamp; cân nhắc QoS 1.
-- \`gascheck/n19/status\`: online/offline, thông tin thiết bị, fault, trạng thái window.
-- \`gascheck/n19/cmd\`: lệnh test/reset có xác thực và điều kiện an toàn. Không thiết kế lệnh "force safe".
+- `gascheck/n19/telemetry`: gas raw/filter, state, trạng thái actuator; QoS 0 khi phù hợp.
+- `gascheck/n19/event`: cảnh báo và transition có id/timestamp; cân nhắc QoS 1.
+- `gascheck/n19/status`: online/offline, thông tin thiết bị, fault, trạng thái window.
+- `gascheck/n19/cmd`: lệnh test/reset có xác thực và điều kiện an toàn. Không thiết kế lệnh "force safe".
 
-\`\`\`json
+```json
 {
   "device_id": "n19-gascheck-01",
   "gas_raw": 1860,
@@ -146,7 +146,7 @@ Topics:
   "window": "CLOSED",
   "sensor_fault": false
 }
-\`\`\`
+```
 
 Node-RED xử lý log/chống spam/cảnh báo từ xa, **không giành quyền kiểm soát local alarm của ESP32**.
 

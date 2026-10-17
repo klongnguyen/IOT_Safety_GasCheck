@@ -29,7 +29,7 @@ Chân 25/26/27 tránh việc tận dụng nhầm GPIO34/35 vốn chỉ là input
 Dùng **1 potentiometer** (giả lập MQ2) có VCC 3,3V và GND nối mạch, chân giữa → GPIO34. Các GPIO đầu ra như bảng trên. Không mô phỏng MQ135, quạt, relay hoặc van gas.
 
 - Servo: 0° = **CLOSED**; 90° = **OPEN**, chỉ là quy ước demo, cần đổi theo cơ cấu thực tế.
-- LED xanh/yellow/red: chỉ một mức chính sáng, trừ chế độ nhấp nháy \`RECOVERY\`/\`FAULT\`.
+- LED xanh/yellow/red: chỉ một mức chính sáng, trừ chế độ nhấp nháy `RECOVERY`/`FAULT`.
 - Ưu tiên kiểm tra nguồn servo và buzzer trước khi lắp sa bàn; nếu servo kẹt, không cố chạy cơ cấu.
 
 ## 4. Cần xác minh trước khi đóng mạch
