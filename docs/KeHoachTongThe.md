@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **BẢN LƯU LỊCH SỬ — BASELINE V1.** Từ ngày 17/10/2026, danh sách linh kiện và logic actuator trong tài liệu này **không còn là thiết kế hiện hành**. GasCheck V2 dùng **MQ2 + ESP32 + 3 LED + buzzer + servo mở cửa sổ mini**, không dùng MQ135/quạt/relay/van gas mô phỏng. Xem **[Kiến trúc vật lý V2](KienTrucVatLy_GasCheck_V2.md)** và [README hiện hành](../README.md). Nội dung V1 dưới đây giữ nguyên để truy vết lịch sử dự án.
+
+---
+
 # IOT-Safety-GasCheck
 
 ## Kế hoạch thực hiện đề tài: Cảnh báo rò rỉ Gas & chất lượng không khí

@@ -1,261 +1,188 @@
 # 🛡️ IOT-Safety-GasCheck
 
-> **Hệ thống IoT cảnh báo rò rỉ Gas & chất lượng không khí**  
-> Nhóm N19 · Đề tài 06 · Nhóm ứng dụng: **Safety**
-
-| Thông tin | Chi tiết |
-|---|---|
-| Thành viên | Trình Quốc An · Nguyễn Kim Long · Nguyễn Long Vỹ |
-| Controller | ESP32 |
-| Sensor/Input | MQ2 · MQ135 |
-| Actuator | Servo mô phỏng van gas · Quạt · Buzzer |
-| Giao tiếp | Wi-Fi · MQTT |
-| Middleware | MQTT Broker · Node-RED |
-| Application | Dashboard · Telegram Bot |
-| Phương pháp | Simulation-First · Incremental Integration · State Machine · E2E Testing |
-
-**Truy cập nhanh:** [📘 Kế hoạch chi tiết](docs/KeHoachTongThe.md) · [📅 Báo cáo Tuần 1](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) · [📂 Báo cáo hằng tuần](#bao-cao-hang-tuan)
-
----
+> **GasCheck V2 — Mô hình IoT phát hiện và cảnh báo rò rỉ khí gas, mô phỏng mở cửa sổ tự động**  
+> Nhóm N19 · Đề tài 06 · Safety · **Thiết kế vật lý cập nhật: 17/10/2026**
 
 ## Mục lục
 
-- [1. Tổng quan](#tong-quan)
-- [2. Kiến trúc IoT 4 tầng](#kien-truc)
-- [3. Thành phần chính](#thanh-phan)
-- [4. Luồng hoạt động](#luong-hoat-dong)
-- [5. Báo cáo hằng tuần](#bao-cao-hang-tuan)
-- [6. Lộ trình 10 tuần](#lo-trinh)
-- [7. Phân công nhóm](#phan-cong)
-- [8. Cấu trúc repository](#cau-truc-repository)
-- [9. Tài liệu dự án](#tai-lieu)
-- [10. Definition of Done](#definition-of-done)
-- [11. Lưu ý an toàn](#luu-y-an-toan)
-
----
+- [1. Tổng quan và phạm vi](#tong-quan)
+- [2. Kiến trúc 4 tầng](#kien-truc)
+- [3. Mô hình vật lý và BOM](#mo-hinh-vat-ly)
+- [4. Nguyên lý hoạt động](#nguyen-ly)
+- [5. Giao tiếp MQTT và ứng dụng](#mqtt)
+- [6. Lộ trình và phân công](#lo-trinh)
+- [7. Tài liệu và báo cáo](#tai-lieu)
+- [8. Trạng thái triển khai](#trang-thai)
+- [9. Giới hạn an toàn](#an-toan)
 
 <a id="tong-quan"></a>
-## 1. Tổng quan
+## 1. Tổng quan và phạm vi
 
-IOT-Safety-GasCheck là hệ thống IoT mô phỏng nhằm giám sát tín hiệu liên quan đến **gas/khói** và **chất lượng không khí**, tự động phản ứng tại thiết bị khi phát hiện trạng thái nguy hiểm, đồng thời truyền dữ liệu qua MQTT để middleware xử lý, lưu log, hiển thị dashboard và gửi cảnh báo từ xa.
+Dự án xây dựng mô hình học tập dùng **MQ2** phát hiện tín hiệu liên quan khí gas, **ESP32** phân mức trạng thái và điều khiển **03 LED, buzzer, servo mở cửa sổ mini**. Thiết bị vẫn cảnh báo cục bộ ngay cả khi mất Wi-Fi/MQTT. Dữ liệu sau đó có thể đi qua **Wi-Fi → MQTT Broker → Node-RED → Dashboard/Telegram** để giám sát và thông báo từ xa.
 
-Mục tiêu của nhóm không chỉ là đọc cảm biến mà là chứng minh một hệ thống IoT hoàn chỉnh có **uplink, downlink, automation và application integration**. Logic an toàn quan trọng được đặt tại ESP32 để actuator vẫn phản ứng ngay cả khi Wi-Fi hoặc MQTT bị gián đoạn.
+**Bài toán thực tế:** rò rỉ có thể ở van, cổ bình, thân bình, ống dẫn, khớp nối hoặc thiết bị sử dụng gas. Do đó **không giả định đóng van là giải pháp cho mọi vị trí rò rỉ**. Servo của đồ án **chỉ mô phỏng mở cửa sổ nhỏ**, không điều khiển van gas.
 
-> **Baseline bắt buộc:** Simulation hoạt động + đủ 4 tầng IoT + uplink/downlink + automation + application/remote integration.
-
----
+> **Thay đổi so với thiết kế V1:** bỏ MQ135 khỏi cấu hình phần cứng hiện tại; bỏ quạt; bỏ relay không còn tải sử dụng; đổi servo từ mô phỏng van sang mô phỏng cửa sổ; dùng 3 LED cố định. Tên đề tài được giao ban đầu có cụm “& chất lượng không khí”; nhóm cần xác nhận với giảng viên về việc thu hẹp phạm vi nếu MQ135 là tiêu chí bắt buộc.
 
 <a id="kien-truc"></a>
 ## 2. Kiến trúc IoT 4 tầng
 
-```mermaid
+\`\`\`mermaid
 flowchart LR
-    subgraph L1["Tầng 1 · Sensing / Physical"]
-        MQ2[MQ2 Gas/Smoke]
-        MQ135[MQ135 Air Quality]
-        ESP32[ESP32 + Local Safety Logic]
-        ACT[Servo · Fan · Buzzer]
-        MQ2 --> ESP32
-        MQ135 --> ESP32
-        ESP32 --> ACT
-    end
+  subgraph L1["Tầng 1 — Sensing / Physical"]
+    MQ2["MQ2 / nguồn tín hiệu giả lập"]
+    ESP["ESP32: ADC, lọc, state machine, local alarm"]
+    LED["3 LED: xanh / vàng / đỏ"]
+    BUZ["Buzzer"]
+    SV["Servo mở cửa sổ mini"]
+    MQ2 --> ESP
+    ESP --> LED
+    ESP --> BUZ
+    ESP --> SV
+  end
+  subgraph L2["Tầng 2 — Network"]
+    WIFI["Wi-Fi"] --> BROKER["MQTT Broker"]
+  end
+  subgraph L3["Tầng 3 — Middleware"]
+    NR["Node-RED: validation, log, rule, alert"]
+  end
+  subgraph L4["Tầng 4 — Application"]
+    DB["Dashboard"]
+    TG["Telegram Bot"]
+  end
+  ESP -->|"telemetry / event / status"| WIFI
+  BROKER --> NR
+  NR --> DB
+  NR --> TG
+  DB -->|"lệnh kiểm thử / yêu cầu reset"| NR
+  NR -->|"publish cmd"| BROKER
+  BROKER -->|"subscribe cmd"| ESP
+\`\`\`
 
-    subgraph L2["Tầng 2 · Network"]
-        WIFI[Wi-Fi]
-        MQTT[MQTT Broker]
-    end
+**Safety rule cục bộ nằm ở ESP32**: đường truyền mạng không phải điều kiện để phát còi hoặc thay đổi LED. Node-RED và Dashboard không được gửi lệnh làm tắt cảnh báo nguy hiểm khi cảm biến vẫn báo mức nguy hiểm.
 
-    subgraph L3["Tầng 3 · Middleware"]
-        NR[Node-RED]
-        RULE[Rule · Logging · State]
-        NR --> RULE
-    end
+<a id="mo-hinh-vat-ly"></a>
+## 3. Mô hình vật lý và BOM
 
-    subgraph L4["Tầng 4 · Application"]
-        DASH[Dashboard]
-        TG[Telegram Bot]
-    end
+\`\`\`mermaid
+flowchart TD
+  MQ2["MQ2 (analog)"] -->|"ADC1 GPIO34"| ESP["ESP32 DevKit"]
+  ESP -->|"GPIO25"| G["LED xanh + R 220–330Ω"]
+  ESP -->|"GPIO26"| Y["LED vàng + R 220–330Ω"]
+  ESP -->|"GPIO27"| R["LED đỏ + R 220–330Ω"]
+  ESP -->|"GPIO23"| B["Buzzer qua mạch lái nếu cần"]
+  ESP -->|"PWM GPIO18"| S["Servo SG90 → cửa sổ mini"]
+  P["Nguồn 5V phù hợp"] --> TERM["Cọc đấu dây / vít ren"]
+  TERM --> ESP
+  TERM --> S
+  TERM --> MQ2
+\`\`\`
 
-    ESP32 -->|Telemetry / Event| WIFI --> MQTT --> NR
-    RULE --> DASH
-    RULE --> TG
-    DASH -->|Command| NR -->|MQTT Publish| MQTT --> WIFI -->|Subscribe| ESP32
-```
+| Thiết bị | Số lượng | Vai trò |
+|---|---:|---|
+| ESP32 DevKit | 1 | Xử lý và kết nối Wi-Fi/MQTT |
+| MQ2 module | 1 | Đầu vào phát hiện khí gas/khói (không đo chính xác ppm nếu chưa hiệu chuẩn) |
+| Servo mini (ví dụ SG90) | 1 | Mở cửa sổ **trong sa bàn** |
+| Buzzer | 1 | Cảnh báo âm thanh |
+| LED xanh, vàng, đỏ | 1 mỗi loại | Mức bình thường, cảnh báo, nguy hiểm |
+| Điện trở LED 220–330Ω | 3 | Hạn dòng LED |
+| Dây nối và cọc đấu dây vít ren | 1 bộ | Kết nối và phân phối nguồn gọn |
+| Nguồn 5V đủ dòng / cáp USB | Theo mạch | Cấp nguồn phù hợp |
+| Mạch chia áp bảo vệ ADC / mạch lái buzzer | Khi cần | Tương thích điện áp và dòng điện |
 
-Nguyên tắc kiến trúc quan trọng: **Safety logic nằm trên ESP32**; Node-RED đóng vai trò middleware/automation engine; application không trực tiếp override trạng thái nguy hiểm của actuator.
+**Không sử dụng trong V2:** MQ135, quạt thông gió, relay và servo đóng van gas.
 
----
+Sơ đồ GPIO là **đề xuất để triển khai**, chưa xác nhận trên mạch thật. Chi tiết nguồn, mass chung, giới hạn ADC 3,3V và kiểm tra mạch xem [Pinout V2](docs/wiring/Pinout_V2.md). Cọc đấu dây không tự động biến mạch điện thành thiết bị chống cháy nổ.
 
-<a id="thanh-phan"></a>
-## 3. Thành phần chính
+<a id="nguyen-ly"></a>
+## 4. Nguyên lý hoạt động
 
-| Nhóm | Thành phần | Vai trò |
+| Trạng thái | Đèn báo | Buzzer | Servo cửa sổ (demo) |
+|---|---|---|---|
+| \`NORMAL\` | Xanh | Tắt | Đóng |
+| \`WARNING\` | Vàng | Kêu ngắt quãng | Giữ vị trí đóng |
+| \`DANGER\` | Đỏ | Kêu liên tục | Mở |
+| \`RECOVERY\` | Vàng nhấp nháy | Theo chính sách cảnh báo chờ xác nhận | Giữ mở |
+| \`FAULT\` | Đỏ nhấp nháy | Mẫu báo lỗi riêng | Không ra lệnh tự đóng khi đang cảnh báo |
+
+- ESP32 đọc MQ2 qua ADC1, lọc nhiễu và so sánh **ngưỡng thử nghiệm**; ngưỡng ADC mô phỏng **không phải ngưỡng nồng độ gas an toàn thực tế**.
+- Sử dụng hysteresis/debounce để tránh đảo trạng thái liên tục.
+- Khi vào \`DANGER\`, ưu tiên còi và LED; servo mô phỏng mở cửa sổ mini. Khi tín hiệu giảm, vào \`RECOVERY\`; chỉ về \`NORMAL\` sau khi giá trị ổn định và có xác nhận/reset theo thiết kế.
+- Mất Wi-Fi/MQTT: cảnh báo tại ESP32 vẫn hoạt động; gửi lại trạng thái mới khi mạng phục hồi.
+- Lỗi cảm biến: hiển thị \`FAULT\`, không mặc định coi mất tín hiệu là an toàn.
+
+<a id="mqtt"></a>
+## 5. Giao tiếp MQTT và ứng dụng (kế hoạch)
+
+| Topic | Hướng | Dữ liệu |
 |---|---|---|
-| Sensing | MQ2 | Tín hiệu đại diện gas/khói |
-| Sensing | MQ135 | Tín hiệu đại diện chất lượng không khí |
-| Embedded | ESP32 | Đọc sensor, state machine, local safety, MQTT |
-| Actuator | Servo | Mô phỏng đóng/mở van gas |
-| Actuator | Fan/DC Motor | Mô phỏng thông gió |
-| Actuator | Buzzer | Cảnh báo tại chỗ |
-| Network | Wi-Fi + MQTT | Truyền telemetry, event, status và command |
-| Middleware | Node-RED | Validate, rule, logging, alert, dashboard, command |
-| Application | Dashboard | Theo dõi trạng thái và gửi lệnh |
-| Application | Telegram Bot | Cảnh báo từ xa |
+| \`gascheck/n19/telemetry\` | ESP32 → Broker | \`gas_raw\`, \`state\`, \`window\`, \`buzzer\` |
+| \`gascheck/n19/event\` | ESP32 → Broker | Sự kiện chuyển trạng thái, cảnh báo |
+| \`gascheck/n19/status\` | ESP32 → Broker | Online/offline, trạng thái đầu ra, lỗi |
+| \`gascheck/n19/cmd\` | Node-RED → ESP32 | \`REQUEST_RESET\`, \`TEST_ALARM\` có kiểm tra điều kiện |
 
----
+Payload mẫu:
 
-<a id="luong-hoat-dong"></a>
-## 4. Luồng hoạt động
+\`\`\`json
+{
+  "device_id": "n19-gascheck-01",
+  "gas_raw": 1200,
+  "state": "NORMAL",
+  "window": "CLOSED",
+  "buzzer": false,
+  "led": "GREEN"
+}
+\`\`\`
 
-**Uplink:**
-
-```text
-MQ2 / MQ135
-    ↓
-ESP32
-    ↓
-Wi-Fi / MQTT
-    ↓
-MQTT Broker
-    ↓
-Node-RED
-    ↓
-Dashboard / Telegram
-```
-
-**Downlink:**
-
-```text
-Dashboard / Node-RED
-    ↓
-MQTT Broker
-    ↓
-ESP32
-    ↓
-Safety Validation
-    ↓
-Actuator
-```
-
-Khi gas đạt mức nguy hiểm, ESP32 ưu tiên đóng van mô phỏng, bật quạt và buzzer tại local. Nếu network khả dụng, event đồng thời được publish để Node-RED ghi log và gửi cảnh báo. Remote command chỉ được thực hiện sau khi ESP32 kiểm tra điều kiện an toàn.
-
----
-
-<a id="bao-cao-hang-tuan"></a>
-## 5. Báo cáo hằng tuần
-
-Toàn bộ báo cáo tiến độ được lưu trong thư mục [`Bao cao hang tuan`](Bao%20cao%20hang%20tuan/). Bảng này sẽ được cập nhật xuyên suốt 10 tuần của đề tài.
-
-| Tuần | Nội dung chính | Trạng thái | Báo cáo |
-|---:|---|---|---|
-| 1 | Phân tích bài toán & kiến trúc hệ thống IoT | ✅ Hoàn thành | [Xem báo cáo Tuần 1](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) |
-| 2 | Simulation tầng Sensing / Physical | ⏳ Chưa cập nhật | — |
-| 3 | Firmware & Embedded Logic | ⏳ Chưa cập nhật | — |
-| 4 | Network / MQTT | ⏳ Chưa cập nhật | — |
-| 5 | Middleware / Node-RED | ⏳ Chưa cập nhật | — |
-| 6 | Application / Remote Integration | ⏳ Chưa cập nhật | — |
-| 7 | Automation & tình huống bất thường | ⏳ Chưa cập nhật | — |
-| 8 | End-to-End Integration | ⏳ Chưa cập nhật | — |
-| 9 | System Test & Documentation | ⏳ Chưa cập nhật | — |
-| 10 | Final Demo & nghiệm thu | ⏳ Chưa cập nhật | — |
-
----
+Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đã triển khai phần mềm.
 
 <a id="lo-trinh"></a>
-## 6. Lộ trình 10 tuần
+## 6. Lộ trình và phân công
 
-| Tuần | Trọng tâm | Milestone / Deliverable chính |
-|---:|---|---|
-| W1 | Phân tích yêu cầu & thiết kế | Problem Statement, Use Case, BOM, Architecture V1, State Machine, MQTT draft |
-| W2 | Simulation Sensing / Physical | Circuit, sensor → actuator, simulation V1 |
-| W3 | Firmware & Embedded Logic | Filtering, hysteresis, state machine, calibration note |
-| W4 | Network / MQTT | Publish, subscribe, payload, reconnect, uplink/downlink |
-| W5 | Node-RED | Telemetry flow, event flow, logging, automation |
-| W6 | Application | Dashboard, Telegram, remote command, full 4-layer evidence |
-| W7 | Safety Automation | Rules, recovery, safety interlock, abnormal scenario |
-| W8 | E2E Integration | Full uplink/downlink, regression test, bug fixing |
-| W9 | System Test | Test report, final architecture, documentation, video draft |
-| W10 | Final Demo | Live demo, report, video, slide/poster, Q&A |
+| Tuần | Trọng tâm |
+|---|---|
+| 1 | Phân tích yêu cầu, kiến trúc, BOM; cập nhật thay đổi sang V2 |
+| 2 | Simulation MQ2 → ESP32 → LED/buzzer/servo mở cửa sổ |
+| 3 | Firmware: lọc, state machine, lỗi đầu vào, reset |
+| 4 | Wi-Fi/MQTT, uplink/downlink, reconnect |
+| 5 | Node-RED, log, automation |
+| 6 | Dashboard và Telegram |
+| 7 | Kiểm thử mất mạng, lỗi cảm biến, an toàn command |
+| 8 | Tích hợp E2E |
+| 9 | Test report, wiring, minh chứng |
+| 10 | Demo và nghiệm thu |
 
-Chi tiết đầy đủ về từng tuần, test case, MQTT topics, state machine và rubric được lưu tại **[Kế hoạch thực hiện tổng thể](docs/KeHoachTongThe.md)**.
-
----
-
-<a id="phan-cong"></a>
-## 7. Phân công nhóm
-
-| Thành viên | Vai trò chính | Phạm vi phụ trách |
-|---|---|---|
-| **Trình Quốc An** | Sensing / Embedded | Simulation, circuit, MQ2/MQ135, actuator, firmware, state machine |
-| **Nguyễn Kim Long** | Network / Middleware | Wi-Fi, MQTT, broker, topic/payload, Node-RED, logging/rule |
-| **Nguyễn Long Vỹ** | Application / Automation | Dashboard, Telegram, remote command, automation/business rules |
-
-Mỗi thành viên vẫn phải cross-review và giải thích được toàn bộ luồng end-to-end của hệ thống.
-
----
-
-<a id="cau-truc-repository"></a>
-## 8. Cấu trúc repository
-
-```text
-IOT_Safety_GasCheck/
-│
-├── Bao cao hang tuan/
-│   └── Baocaodoan_Tuan01.md
-│
-├── docs/
-│   └── KeHoachTongThe.md
-│
-├── esp32/                 # Firmware ESP32 (dự kiến)
-├── simulation/            # Wokwi / simulation assets (dự kiến)
-├── node-red/              # Node-RED flows (dự kiến)
-├── telegram/              # Telegram integration docs (dự kiến)
-├── evidence/              # Evidence theo milestone (dự kiến)
-├── slides/                # Slide/poster cuối kỳ (dự kiến)
-│
-└── README.md
-```
-
-Thư mục sẽ được mở rộng dần theo tiến độ từng tuần; không tạo trước các thư mục rỗng chỉ để khớp cấu trúc.
-
----
+| Thành viên | Phụ trách |
+|---|---|
+| Trình Quốc An | Sensing / Embedded — mạch, MQ2, servo cửa sổ, LED, buzzer, firmware |
+| Nguyễn Kim Long | Network / Middleware — MQTT, Node-RED, tích hợp |
+| Nguyễn Long Vỹ | Application / Automation — Dashboard, Telegram, QA |
 
 <a id="tai-lieu"></a>
-## 9. Tài liệu dự án
+## 7. Tài liệu và báo cáo
 
-| Tài liệu | Nội dung |
+| Tài liệu | Mục đích |
 |---|---|
-| [Kế hoạch thực hiện tổng thể](docs/KeHoachTongThe.md) | Kế hoạch chi tiết 10 tuần, kiến trúc, MQTT, state machine, test, rubric và deliverables |
-| [Báo cáo Tuần 1](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) | Phân tích bài toán, use case, yêu cầu, architecture V1, BOM, test scenarios và phân công |
+| [Thiết kế vật lý & kiến trúc GasCheck V2](docs/KienTrucVatLy_GasCheck_V2.md) | **Nguồn tham chiếu hiện hành** cho phần cứng, an toàn, trạng thái và 4 tầng |
+| [Sơ đồ chân đề xuất V2](docs/wiring/Pinout_V2.md) | GPIO, nguồn và kiểm tra điện |
+| [Kế hoạch Tuần 2 — V2](docs/KeHoachTuan02.md) | Việc cần làm và test case phiên bản mới |
+| [Kế hoạch tổng thể — baseline V1](docs/KeHoachTongThe.md) | Tài liệu kế hoạch gốc; phần linh kiện/logic V1 đã được thay thế |
+| [Báo cáo Tuần 1 — baseline V1](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) | Bằng chứng thiết kế gốc, giữ lịch sử |
+| [Thư mục báo cáo hằng tuần](Bao%20cao%20hang%20tuan/) | Các báo cáo theo từng milestone |
 
-Các báo cáo mới sẽ được bổ sung vào mục **Báo cáo hằng tuần** ngay khi hoàn thành từng milestone.
+<a id="trang-thai"></a>
+## 8. Trạng thái triển khai
 
----
+- [x] Chốt thay đổi kiến trúc vật lý V2 và bổ sung tài liệu GitHub.
+- [ ] Xác nhận phạm vi rút MQ135 với giảng viên nếu tiêu chí đề tài yêu cầu chất lượng không khí.
+- [ ] Mạch Wokwi/sa bàn thực tế hoạt động.
+- [ ] Firmware và test các trạng thái.
+- [ ] MQTT Broker, Node-RED, Dashboard, Telegram chạy end-to-end.
+- [ ] Kiểm thử tình huống bất thường và nghiệm thu.
 
-<a id="definition-of-done"></a>
-## 10. Definition of Done
+<a id="an-toan"></a>
+## 9. Giới hạn an toàn
 
-Đề tài được xem là hoàn thành khi chứng minh được các thành phần chính sau:
+> **Prototype phục vụ học tập, KHÔNG phải hệ thống bảo vệ an toàn gas đã chứng nhận.** Không dùng khí gas thật để tạo tình huống rò rỉ khi demo; dùng potentiometer hoặc tín hiệu giả lập. MQ2/ESP32, buzzer, servo, cọc đấu dây tự lắp không được xem là thiết bị an toàn trong môi trường có khí dễ cháy. Servo motor có thể là nguồn đánh lửa; cơ cấu mở cửa sổ bằng servo chỉ phù hợp cho sa bàn không có gas thật. Trong một hệ thống thực tế cần giải pháp phát hiện và ứng phó được đánh giá/chứng nhận phù hợp, không được mặc định bật động cơ hay đóng/ngắt điện khi có rò rỉ.
 
-- [ ] Simulation sensor/input thay đổi và actuator phản ứng đúng.
-- [ ] ESP32 có filtering, state machine và local safety logic.
-- [ ] MQTT publish, subscribe và reconnect hoạt động.
-- [ ] Node-RED nhận dữ liệu, xử lý rule, logging và command.
-- [ ] Dashboard hiển thị realtime và có remote interaction.
-- [ ] Telegram hoặc cơ chế tương đương gửi cảnh báo từ xa.
-- [ ] Safety interlock ngăn command nguy hiểm.
-- [ ] Uplink và downlink hoạt động end-to-end.
-- [ ] Có test report, source, architecture, wiring, MQTT docs, video và báo cáo cuối kỳ.
-
----
-
-<a id="luu-y-an-toan"></a>
-## 11. Lưu ý an toàn
-
-> Dự án này là **prototype/mô phỏng phục vụ học tập**. MQ2/MQ135, servo và mạch tự lắp không phải hệ thống phát hiện/rò rỉ gas được chứng nhận và không nên được dùng để bảo vệ người hoặc tài sản trong hệ thống gas thực tế.
-
-Nếu triển khai hardware bonus, servo chỉ nên mô phỏng cơ cấu van. Không gắn trực tiếp cơ cấu tự chế vào đường gas đang sử dụng.
-
----
-
-**Project:** IOT-Safety-GasCheck · **Nhóm:** N19 · **Phương châm triển khai:** `Simulation-First → Incremental Integration → State-Machine Automation → End-to-End Testing`
+**Phương pháp triển khai:** Simulation-First → Local Logic → MQTT/Node-RED → Application → E2E Testing.
