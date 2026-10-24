@@ -1,0 +1,54 @@
+{
+  "project": "IOT-Safety-GasCheck",
+  "client": {
+    "name": "N19_Tester_MQTTX",
+    "broker": "broker.hivemq.com",
+    "port": 1883,
+    "clientId": "mqttx_client_tester_n19",
+    "cleanSession": true,
+    "keepalive": 60
+  },
+  "subscriptions": [
+    {
+      "topic": "gascheck/n19/#",
+      "qos": 0,
+      "description": "Lang nghe toan bo topic gom telemetry, event, status"
+    },
+    {
+      "topic": "gascheck/n19/telemetry",
+      "qos": 0,
+      "description": "Chi xem du lieu telemetry moi 2 giay"
+    },
+    {
+      "topic": "gascheck/n19/event",
+      "qos": 1,
+      "description": "Nhan su kien chuyen trang thai va phan hoi lenh"
+    }
+  ],
+  "preset_commands": [
+    {
+      "name": "1. Gui lenh Reset hop le (khi gas da ha thap)",
+      "topic": "gascheck/n19/cmd",
+      "qos": 1,
+      "payload": {
+        "cmd": "REQUEST_RESET"
+      }
+    },
+    {
+      "name": "2. Gui lenh Test Coi 2s",
+      "topic": "gascheck/n19/cmd",
+      "qos": 1,
+      "payload": {
+        "cmd": "TEST_ALARM"
+      }
+    },
+    {
+      "name": "3. Gui lenh Ping kiem tra song sot",
+      "topic": "gascheck/n19/cmd",
+      "qos": 1,
+      "payload": {
+        "cmd": "PING"
+      }
+    }
+  ]
+}

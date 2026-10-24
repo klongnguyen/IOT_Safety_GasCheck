@@ -1,0 +1,6 @@
+{
+  "name": "GasCheck – Hệ thống Giám sát & Cảnh báo Rò rỉ Khí Gas IoT",
+  "description": "Ứng dụng giám sát và cảnh báo rò rỉ khí gas thời gian thực theo kiến trúc GasCheck V2 (ESP32, MQ2, MQTT, Node-RED) lấy cảm hứng từ Home Assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

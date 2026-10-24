@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# PlatformIO
+.pio/
+.vscode/
+
+# Temporary & Lock files
+~$*.xlsx
+*.tmp
+*.log
+
+# Environment & Private data
+.env
+.env.local
+.data/
+.aistudio/
+
+# OS files
+.DS_Store
+Thumbs.db

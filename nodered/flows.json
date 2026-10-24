@@ -1,0 +1,503 @@
+[
+  {
+    "id": "tab_gascheck",
+    "type": "tab",
+    "label": "GasCheck V2 - N19 Middleware",
+    "disabled": false,
+    "info": "Flow Middleware xu ly du lieu IoT va Automation Rules cho He thong Canh bao Ro ri Gas Nhom N19"
+  },
+  {
+    "id": "mqtt_broker_hivemq",
+    "type": "mqtt-broker",
+    "name": "HiveMQ Public Broker",
+    "broker": "broker.hivemq.com",
+    "port": "1883",
+    "clientid": "nodered_n19_middleware",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true
+  },
+  {
+    "id": "ui_tab_main",
+    "type": "ui_tab",
+    "name": "GasCheck N19 Monitor",
+    "icon": "dashboard",
+    "order": 1
+  },
+  {
+    "id": "ui_group_sensor",
+    "type": "ui_group",
+    "name": "1. Giam sat Nong do Gas (MQ2)",
+    "tab": "ui_tab_main",
+    "order": 1,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "ui_group_actuators",
+    "type": "ui_group",
+    "name": "2. Trang thai Co cau & Canh bao",
+    "tab": "ui_tab_main",
+    "order": 2,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "ui_group_control",
+    "type": "ui_group",
+    "name": "3. Dieu khien & Test an toan",
+    "tab": "ui_tab_main",
+    "order": 3,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "ui_group_events",
+    "type": "ui_group",
+    "name": "4. Nhat ky Su kien (Event History)",
+    "tab": "ui_tab_main",
+    "order": 4,
+    "disp": true,
+    "width": "12",
+    "collapse": false
+  },
+  {
+    "id": "node_mqtt_telemetry_in",
+    "type": "mqtt in",
+    "z": "tab_gascheck",
+    "name": "Sub: Telemetry",
+    "topic": "gascheck/n19/telemetry",
+    "qos": "0",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker_hivemq",
+    "x": 140,
+    "y": 100,
+    "wires": [
+      [
+        "node_json_telemetry"
+      ]
+    ]
+  },
+  {
+    "id": "node_json_telemetry",
+    "type": "json",
+    "z": "tab_gascheck",
+    "name": "Parse JSON",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 320,
+    "y": 100,
+    "wires": [
+      [
+        "node_fn_telemetry_processor",
+        "node_fn_automation_escalation"
+      ]
+    ]
+  },
+  {
+    "id": "node_fn_telemetry_processor",
+    "type": "function",
+    "z": "tab_gascheck",
+    "name": "Middleware Data Processor & Context Storage",
+    "func": "// Luu tru context vao flow memory\nvar data = msg.payload;\nif (!data || typeof data !== 'object') return null;\n\nflow.set('currentGas', data.gas_filtered || data.gas_raw || 0);\nflow.set('currentState', data.state || 'UNKNOWN');\nflow.set('lastTelemetryTime', Date.now());\nflow.set('windowStatus', data.window || 'UNKNOWN');\nflow.set('buzzerStatus', data.buzzer ? 'ON' : 'OFF');\n\n// Tao cac message rieng cho Dashboard va Debug\nvar msgGas = { payload: data.gas_filtered, topic: 'gas' };\nvar msgState = { payload: 'Trang thai: ' + data.state, topic: 'state' };\nvar msgWindow = { payload: 'Cua so: ' + data.window, topic: 'window' };\nvar msgBuzzer = { payload: 'Coi bao dong: ' + (data.buzzer ? 'ON' : 'OFF'), topic: 'buzzer' };\n\nreturn [msg, msgGas, msgState, msgWindow, msgBuzzer];",
+    "outputs": 5,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 570,
+    "y": 100,
+    "wires": [
+      [
+        "node_debug_telemetry"
+      ],
+      [
+        "ui_gauge_gas"
+      ],
+      [
+        "ui_text_state"
+      ],
+      [
+        "ui_text_window"
+      ],
+      [
+        "ui_text_buzzer"
+      ]
+    ]
+  },
+  {
+    "id": "node_debug_telemetry",
+    "type": "debug",
+    "z": "tab_gascheck",
+    "name": "Log: Telemetry",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 860,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "node_mqtt_event_in",
+    "type": "mqtt in",
+    "z": "tab_gascheck",
+    "name": "Sub: Events",
+    "topic": "gascheck/n19/event",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker_hivemq",
+    "x": 130,
+    "y": 240,
+    "wires": [
+      [
+        "node_json_event"
+      ]
+    ]
+  },
+  {
+    "id": "node_json_event",
+    "type": "json",
+    "z": "tab_gascheck",
+    "name": "Parse Event JSON",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 330,
+    "y": 240,
+    "wires": [
+      [
+        "node_fn_event_logger"
+      ]
+    ]
+  },
+  {
+    "id": "node_fn_event_logger",
+    "type": "function",
+    "z": "tab_gascheck",
+    "name": "Rule & Event History Buffer",
+    "func": "var eventData = msg.payload;\nvar logs = flow.get('eventLogs') || [];\n\nvar now = new Date();\nvar timeStr = now.toLocaleTimeString('vi-VN') + ' ' + now.toLocaleDateString('vi-VN');\n\nvar logEntry = {\n    time: timeStr,\n    event: eventData.event || eventData.command || 'EVENT',\n    detail: JSON.stringify(eventData)\n};\n\n// Them vao dau danh sach, giu toi da 20 su kien gan nhat\nlogs.unshift(logEntry);\nif (logs.length > 20) logs.pop();\nflow.set('eventLogs', logs);\n\n// Tao dinh dang HTML hien thi tren Dashboard\nvar html = '<table style=\"width:100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px;\">';\nhtml += '<tr style=\"background:#1e293b; color:#fff; text-align:left;\"><th style=\"padding:6px;\">Thoi gian</th><th style=\"padding:6px;\">Su kien</th><th style=\"padding:6px;\">Chi tiet</th></tr>';\n\nfor (var i = 0; i < logs.length; i++) {\n    var bg = (i % 2 === 0) ? '#f8fafc' : '#ffffff';\n    var color = '#0f172a';\n    if (logs[i].detail.indexOf('DANGER') !== -1 || logs[i].detail.indexOf('REJECTED') !== -1) {\n        color = '#dc2626';\n    } else if (logs[i].detail.indexOf('ACCEPTED') !== -1) {\n        color = '#16a34a';\n    }\n    html += '<tr style=\"background:' + bg + '; color:' + color + ';\">';\n    html += '<td style=\"padding:6px; border-bottom:1px solid #e2e8f0;\">' + logs[i].time + '</td>';\n    html += '<td style=\"padding:6px; border-bottom:1px solid #e2e8f0; font-weight:bold;\">' + logs[i].event + '</td>';\n    html += '<td style=\"padding:6px; border-bottom:1px solid #e2e8f0;\">' + logs[i].detail + '</td>';\n    html += '</tr>';\n}\nhtml += '</table>';\n\nreturn [ { payload: eventData }, { payload: html } ];",
+    "outputs": 2,
+    "noerr": 0,
+    "x": 550,
+    "y": 240,
+    "wires": [
+      [
+        "node_debug_event"
+      ],
+      [
+        "ui_template_event_history"
+      ]
+    ]
+  },
+  {
+    "id": "node_debug_event",
+    "type": "debug",
+    "z": "tab_gascheck",
+    "name": "Log: Event Occurred",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 870,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "node_fn_automation_escalation",
+    "type": "function",
+    "z": "tab_gascheck",
+    "name": "Automation Rule 1: High Gas Sustained Alarm",
+    "func": "// Automation Rule: Kiem tra ro ri gas keo dai\nvar data = msg.payload;\nif (!data || typeof data !== 'object') return null;\n\nvar dangerCounter = flow.get('dangerCounter') || 0;\n\nif (data.state === 'DANGER' || (data.gas_filtered && data.gas_filtered >= 2500)) {\n    dangerCounter++;\n    flow.set('dangerCounter', dangerCounter);\n    \n    // Neu muc DANGER duy tri tu 3 chu ky telemetry lien tiep (~6 giay tro len)\n    if (dangerCounter === 3) {\n        var alertMsg = {\n            payload: {\n                rule: 'SUSTAINED_DANGER_ESCALATION',\n                severity: 'CRITICAL',\n                message: 'CANH BAO KHAN CAP CAP DO 2: Gas duy tri muc nguy hiem vuot nguong 6 giay! De nghi so tan ngay!',\n                gas_level: data.gas_filtered,\n                time: new Date().toISOString()\n            }\n        };\n        return alertMsg;\n    }\n} else {\n    // Reset bo dem khi gas giam xuong\n    flow.set('dangerCounter', 0);\n}\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 590,
+    "y": 160,
+    "wires": [
+      [
+        "node_debug_escalation"
+      ]
+    ]
+  },
+  {
+    "id": "node_debug_escalation",
+    "type": "debug",
+    "z": "tab_gascheck",
+    "name": "ESCALATION ALERT!",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "x": 890,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "ui_btn_reset",
+    "type": "ui_button",
+    "z": "tab_gascheck",
+    "name": "Button Reset",
+    "group": "ui_group_control",
+    "order": 1,
+    "width": "6",
+    "height": "1",
+    "passthru": false,
+    "label": "🔄 YEU CAU RESET HE THONG",
+    "tooltip": "Chi gui duoc khi gas da ha xuong muc an toan",
+    "color": "#ffffff",
+    "bgcolor": "#0284c7",
+    "icon": "refresh",
+    "payload": "TRIGGER_RESET",
+    "payloadType": "str",
+    "topic": "reset",
+    "x": 130,
+    "y": 380,
+    "wires": [
+      [
+        "node_fn_safety_interlock_check"
+      ]
+    ]
+  },
+  {
+    "id": "node_fn_safety_interlock_check",
+    "type": "function",
+    "z": "tab_gascheck",
+    "name": "Automation Rule 2: Middleware Safety Interlock Check",
+    "func": "// Kiem tra an toan tai Middleware truoc khi cho phep phat lenh xuong ESP32\nvar currentGas = flow.get('currentGas') || 0;\nvar currentState = flow.get('currentState') || 'UNKNOWN';\n\n// Neu he thong dang DANGER hoac gas vuot muc an toan (>= 1300)\nif (currentState === 'DANGER' || currentGas >= 1300) {\n    node.warn('SAFETY INTERLOCK BLOCKED: Gas hien tai la ' + currentGas + ' (vuot nguong an toan 1300). Middleware tu choi gui lenh reset!');\n    \n    // Log su kien bi chan vao history\n    var logs = flow.get('eventLogs') || [];\n    logs.unshift({\n        time: new Date().toLocaleTimeString('vi-VN'),\n        event: 'MIDDLEWARE_BLOCKED_RESET',\n        detail: 'Tu choi reset vi Gas = ' + currentGas + ' (State: ' + currentState + ')'\n    });\n    flow.set('eventLogs', logs);\n    \n    return [null, { payload: 'CANH BAO: Nong do gas con cao (' + currentGas + '). Tu choi reset de bao ve an toan!' }];\n}\n\n// Neu an toan -> Dong y phat goi tin xuong ESP32\nvar cmdPayload = {\n    cmd: 'REQUEST_RESET'\n};\nreturn [{ payload: JSON.stringify(cmdPayload) }, null];",
+    "outputs": 2,
+    "noerr": 0,
+    "x": 450,
+    "y": 380,
+    "wires": [
+      [
+        "node_mqtt_cmd_out",
+        "node_debug_downlink"
+      ],
+      [
+        "node_debug_blocked"
+      ]
+    ]
+  },
+  {
+    "id": "node_mqtt_cmd_out",
+    "type": "mqtt out",
+    "z": "tab_gascheck",
+    "name": "Pub: Downlink Command",
+    "topic": "gascheck/n19/cmd",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker_hivemq",
+    "x": 860,
+    "y": 360,
+    "wires": []
+  },
+  {
+    "id": "node_debug_downlink",
+    "type": "debug",
+    "z": "tab_gascheck",
+    "name": "Downlink Sent",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "x": 840,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "node_debug_blocked",
+    "type": "debug",
+    "z": "tab_gascheck",
+    "name": "Reset Blocked!",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "x": 840,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "ui_btn_test_alarm",
+    "type": "ui_button",
+    "z": "tab_gascheck",
+    "name": "Button Test Coi",
+    "group": "ui_group_control",
+    "order": 2,
+    "width": "6",
+    "height": "1",
+    "passthru": false,
+    "label": "🔔 TEST COI BAO DONG (2s)",
+    "tooltip": "Kiem tra hoat dong cua coi tu xa",
+    "color": "#ffffff",
+    "bgcolor": "#eab308",
+    "icon": "volume-up",
+    "payload": "{\"cmd\":\"TEST_ALARM\"}",
+    "payloadType": "str",
+    "topic": "test_alarm",
+    "x": 140,
+    "y": 480,
+    "wires": [
+      [
+        "node_mqtt_cmd_out"
+      ]
+    ]
+  },
+  {
+    "id": "node_inject_watchdog",
+    "type": "inject",
+    "z": "tab_gascheck",
+    "name": "Watchdog Timer (5s)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "5",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "CHECK_HEARTBEAT",
+    "payloadType": "str",
+    "x": 160,
+    "y": 560,
+    "wires": [
+      [
+        "node_fn_watchdog"
+      ]
+    ]
+  },
+  {
+    "id": "node_fn_watchdog",
+    "type": "function",
+    "z": "tab_gascheck",
+    "name": "Rule 4: Network Liveness Watchdog",
+    "func": "var lastTime = flow.get('lastTelemetryTime');\nif (!lastTime) {\n    return { payload: 'Dang cho goi tin telemetry dau tien tu ESP32...' };\n}\n\nvar diff = Date.now() - lastTime;\nif (diff > 10000) {\n    return {\n        payload: {\n            alert: 'DEVICE_OFFLINE',\n            message: 'CANH BAO: Thiet bi mat tin hieu qua 10 giay! Kiem tra nguon hoac Wi-Fi.',\n            last_seen_sec_ago: Math.round(diff / 1000)\n        }\n    };\n} else {\n    return { payload: 'Thiet bi dang hoat dong binh thuong. Do tre: ' + Math.round(diff / 1000) + 's' };\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 440,
+    "y": 560,
+    "wires": [
+      [
+        "node_debug_watchdog"
+      ]
+    ]
+  },
+  {
+    "id": "node_debug_watchdog",
+    "type": "debug",
+    "z": "tab_gascheck",
+    "name": "Heartbeat Status",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "x": 840,
+    "y": 560,
+    "wires": []
+  },
+  {
+    "id": "ui_gauge_gas",
+    "type": "ui_gauge",
+    "z": "tab_gascheck",
+    "name": "Gauge Gas MQ-2",
+    "group": "ui_group_sensor",
+    "order": 1,
+    "width": "6",
+    "height": "4",
+    "gtype": "gage",
+    "title": "Nong do Gas (ADC 12-bit)",
+    "label": "ADC",
+    "format": "{{value}}",
+    "min": 0,
+    "max": 4095,
+    "colors": [
+      "#16a34a",
+      "#eab308",
+      "#dc2626"
+    ],
+    "seg1": "1500",
+    "seg2": "2500",
+    "x": 860,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "ui_text_state",
+    "type": "ui_text",
+    "z": "tab_gascheck",
+    "name": "UI State Text",
+    "group": "ui_group_actuators",
+    "order": 1,
+    "width": "6",
+    "height": "1",
+    "format": "<b>{{msg.payload}}</b>",
+    "layout": "row-spread",
+    "x": 860,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "ui_text_window",
+    "type": "ui_text",
+    "z": "tab_gascheck",
+    "name": "UI Window Text",
+    "group": "ui_group_actuators",
+    "order": 2,
+    "width": "6",
+    "height": "1",
+    "format": "<b>{{msg.payload}}</b>",
+    "layout": "row-spread",
+    "x": 860,
+    "y": 660,
+    "wires": []
+  },
+  {
+    "id": "ui_text_buzzer",
+    "type": "ui_text",
+    "z": "tab_gascheck",
+    "name": "UI Buzzer Text",
+    "group": "ui_group_actuators",
+    "order": 3,
+    "width": "6",
+    "height": "1",
+    "format": "<b>{{msg.payload}}</b>",
+    "layout": "row-spread",
+    "x": 860,
+    "y": 700,
+    "wires": []
+  },
+  {
+    "id": "ui_template_event_history",
+    "type": "ui_template",
+    "z": "tab_gascheck",
+    "name": "UI Event Table",
+    "group": "ui_group_events",
+    "order": 1,
+    "width": "12",
+    "height": "6",
+    "format": "<div ng-bind-html=\"msg.payload\"></div>",
+    "storeOutMessages": true,
+    "fwdInMessages": true,
+    "resendOnRefresh": true,
+    "templateScope": "local",
+    "x": 860,
+    "y": 280,
+    "wires": [
+      []
+    ]
+  }
+]

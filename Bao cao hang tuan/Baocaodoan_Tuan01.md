@@ -32,9 +32,9 @@
 | Nhóm ứng dụng | Safety |
 | Thành viên | Trình Quốc An – Nguyễn Kim Long – Nguyễn Long Vỹ |
 | Thời lượng | 10 tuần × 6 giờ/tuần/SV, tối thiểu 60 giờ/SV |
-| Mục tiêu Tuần 1 | Phân tích bài toán, chốt phạm vi, xác định input/output và logic tự động, thiết kế kiến trúc IoT 4 tầng V1, BOM dự kiến và phân công nhóm |
+| Mục tiêu Tuần 1 | Phân tích bài toán, chốt phạm vi, xác định input/output và logic tự động, thiết kế kiến trúc IoT 4 tầng V2, BOM dự kiến và phân công nhóm |
 
-> **Lưu ý an toàn:** Đây là hệ thống prototype/mô phỏng phục vụ học tập. MQ2/MQ135, servo và mạch tự lắp **không phải hệ thống an toàn khí gas được chứng nhận** và không nên dùng để bảo vệ người/tài sản trên đường gas thật. Nếu làm hardware bonus, servo chỉ nên mô phỏng cơ cấu van, không gắn trực tiếp vào hệ thống gas đang sử dụng.
+> **Lưu ý an toàn:** Đây là hệ thống prototype/mô phỏng phục vụ học tập. MQ2, servo và mạch tự lắp **không phải hệ thống an toàn khí gas được chứng nhận** và không nên dùng để bảo vệ người/tài sản trên đường gas thật. **Đồ án thống nhất KHÔNG dùng van gas, KHÔNG dùng quạt thông gió và KHÔNG dùng relay**. Động cơ servo SG90 trong mô hình chỉ dùng để **mô phỏng mở cửa sổ mini sa bàn** nhằm tăng cường đối lưu thông thoáng không khí.
 
 ---
 
@@ -43,16 +43,16 @@
 
 ## 1.1. Bối cảnh
 
-Trong không gian kín như bếp, phòng trọ, phòng kỹ thuật hoặc khu vực có thiết bị sử dụng gas, rò rỉ khí gas/khói có thể gây cháy nổ hoặc ảnh hưởng sức khỏe. Bên cạnh đó, chất lượng không khí kém cũng cần được phát hiện để kích hoạt thông gió và cảnh báo người dùng.
+Trong không gian kín như bếp, phòng trọ, phòng kỹ thuật hoặc khu vực có thiết bị sử dụng gas, rò rỉ khí gas/khói có thể gây cháy nổ hoặc ảnh hưởng sức khỏe. Điểm rò rỉ có thể xuất phát từ thân bình, cổ bình, ống dẫn mềm, khớp nối chứ không chỉ nằm sau van. Do đó, việc giả định đóng van là biện pháp toàn năng là không chính xác và thiếu an toàn.
 
-Việc chỉ hiển thị giá trị cảm biến là chưa đủ. Hệ thống cần có khả năng **tự phản ứng tại thiết bị ngay khi phát hiện nguy hiểm**, đồng thời truyền dữ liệu qua mạng để middleware xử lý, lưu log và gửi cảnh báo đến người dùng.
+Việc chỉ hiển thị giá trị cảm biến là chưa đủ. Hệ thống cần có khả năng **tự phản ứng tại thiết bị ngay khi phát hiện nguy hiểm** (bật còi, nhấp nháy đèn cảnh báo, mở cửa sổ thông thoáng), đồng thời truyền dữ liệu qua mạng để middleware xử lý, lưu log và gửi cảnh báo đến người dùng.
 
 ## 1.2. Vấn đề cần giải quyết
 
 Hệ thống cần trả lời được 5 câu hỏi chính:
 
-1. Không khí hiện tại có dấu hiệu gas/khói hoặc chất lượng không khí xấu hay không?
-2. Khi vượt ngưỡng, hệ thống có phản ứng tự động mà không cần người dùng thao tác không?
+1. Không khí hiện tại có dấu hiệu gas/khói bất thường hay không?
+2. Khi vượt ngưỡng, hệ thống có phản ứng tự động tại chỗ (bật còi, đổi LED, mở cửa sổ) mà không cần người dùng thao tác không?
 3. Nếu Internet/MQTT bị mất, thiết bị có vẫn thực hiện phản ứng an toàn cục bộ không?
 4. Người dùng có nhận được trạng thái/cảnh báo từ xa không?
 5. Hệ thống có chứng minh được đầy đủ luồng IoT 4 tầng và luồng dữ liệu hai chiều không?
@@ -61,14 +61,14 @@ Hệ thống cần trả lời được 5 câu hỏi chính:
 
 Xây dựng hệ thống IoT mô phỏng có khả năng:
 
-- giám sát tín hiệu gas/khói bằng MQ2;
-- giám sát chất lượng không khí bằng MQ135;
-- xử lý dữ liệu trên ESP32;
-- tự động đóng van gas mô phỏng, bật quạt và buzzer khi có nguy hiểm;
+- giám sát tín hiệu gas/khói bằng MQ2 (nguồn analog giả lập qua potentiometer);
+- xử lý dữ liệu và lọc nhiễu trên ESP32;
+- phân định 3 mức trạng thái trực quan bằng 3 LED (Xanh, Vàng, Đỏ);
+- tự động mở cửa sổ mini mô phỏng bằng servo SG90 và phát còi buzzer khi có nguy hiểm;
 - truyền telemetry/event qua MQTT;
 - dùng Node-RED làm middleware/automation engine;
 - hiển thị trạng thái và gửi cảnh báo từ xa qua Telegram Bot hoặc dashboard;
-- cho phép một số lệnh từ xa nhưng luôn bị ràng buộc bởi quy tắc an toàn tại ESP32.
+- cho phép một số lệnh từ xa nhưng luôn bị ràng buộc bởi quy tắc an toàn (Safety Interlock) tại ESP32.
 
 ## 1.4. Phạm vi thực hiện
 
@@ -122,15 +122,15 @@ Xây dựng hệ thống IoT mô phỏng có khả năng:
 
 | ID | Use Case | Actor chính | Kết quả mong đợi |
 |---|---|---|---|
-| UC01 | Theo dõi môi trường | ESP32, MQ2, MQ135 | Đọc dữ liệu định kỳ và xác định trạng thái |
-| UC02 | Xử lý rò rỉ gas | ESP32 | Đóng van mô phỏng, bật quạt, bật buzzer |
-| UC03 | Xử lý chất lượng không khí kém | ESP32 | Bật quạt thông gió và phát event cảnh báo |
-| UC04 | Gửi telemetry | ESP32 | Publish dữ liệu lên MQTT |
-| UC05 | Gửi cảnh báo khẩn | Node-RED | Gửi message Telegram khi trạng thái nguy hiểm |
-| UC06 | Xem trạng thái từ xa | Người dùng | Xem sensor/state/actuator trên dashboard hoặc Telegram |
-| UC07 | Gửi command từ xa | Người dùng | Command được Node-RED publish xuống ESP32 |
-| UC08 | Khôi phục sau cảnh báo | Người dùng + ESP32 | Chỉ cho reset/reopen khi dữ liệu đã trở lại an toàn |
-| UC09 | Xử lý mất mạng | ESP32 | Local automation vẫn chạy; MQTT tự reconnect khi mạng trở lại |
+| UC01 | Theo dõi nồng độ khí gas | ESP32, MQ2 | Đọc dữ liệu ADC định kỳ, lọc số và xác định trạng thái |
+| UC02 | Xử lý rò rỉ gas tự động | ESP32 | Đổi LED Đỏ, bật còi buzzer, mở cửa sổ mini sa bàn (90°) |
+| UC03 | Cảnh báo mức Warning sớm | ESP32 | Đổi LED Vàng, còi kêu ngắt quãng (300ms ON / 700ms OFF) |
+| UC04 | Gửi telemetry định kỳ | ESP32 | Publish dữ liệu lên MQTT topic telemetry mỗi 2s |
+| UC05 | Gửi cảnh báo khẩn | Node-RED | Gửi message cảnh báo khi trạng thái chuyển sang nguy hiểm |
+| UC06 | Xem trạng thái từ xa | Người dùng | Xem sensor/state/actuator trên Dashboard hoặc Telegram |
+| UC07 | Gửi command từ xa | Người dùng | Lệnh Reset/Test còi được Node-RED publish xuống ESP32 |
+| UC08 | Khôi phục sau cảnh báo | Người dùng + ESP32 | Chỉ cho reset đóng cửa sổ khi gas đã trở lại ngưỡng an toàn (<1300) |
+| UC09 | Xử lý mất mạng | ESP32 | Cảnh báo còi, LED và mở cửa sổ cục bộ vẫn chạy 100% |
 
 ## 2.3. Use Case quan trọng – UC02: Phát hiện gas nguy hiểm
 
@@ -138,18 +138,18 @@ Xây dựng hệ thống IoT mô phỏng có khả năng:
 
 **Luồng chính:**
 
-1. ESP32 đọc giá trị MQ2.
-2. Firmware lọc/chuẩn hóa dữ liệu.
-3. Giá trị đạt mức `GAS_DANGER`.
+1. ESP32 đọc giá trị analog từ MQ2 (GPIO34).
+2. Firmware lọc trung bình động 10 mẫu để khử gai nhiễu.
+3. Giá trị lọc đạt mức nguy hiểm (`gas_filtered >= 2500`).
 4. ESP32 chuyển state sang `DANGER`.
-5. ESP32 đóng servo van gas mô phỏng.
-6. ESP32 bật quạt.
-7. ESP32 bật buzzer.
-8. ESP32 publish event lên MQTT nếu network khả dụng.
-9. Node-RED nhận event, ghi log và gửi Telegram.
-10. Application cập nhật trạng thái nguy hiểm.
+5. ESP32 điều khiển servo mở cửa sổ mini sa bàn sang góc 90° để thông thoáng khí.
+6. ESP32 bật đèn LED Đỏ (GPIO27).
+7. ESP32 kích hoạt còi buzzer kêu liên tục (GPIO23).
+8. ESP32 publish gói tin sự kiện khẩn cấp lên MQTT topic `gascheck/n19/event`.
+9. Node-RED nhận event, ghi log vào lịch sử và gửi cảnh báo.
+10. Application cập nhật trạng thái nguy hiểm lên Dashboard.
 
-**Luồng ngoại lệ:** Nếu mất Wi-Fi/MQTT, bước 5–7 vẫn phải thực hiện bình thường. Hệ thống chỉ thiếu cảnh báo từ xa và sẽ gửi trạng thái lại sau khi kết nối phục hồi.
+**Luồng ngoại lệ:** Nếu mất Wi-Fi/MQTT, bước 5–7 (mở cửa sổ, bật còi, bật LED đỏ) vẫn phải thực hiện tức thì tại chỗ. Thiết bị không chờ mạng và sẽ tự động gửi trạng thái sau khi kết nối phục hồi.
 
 ## 2.4. Use Case quan trọng – UC08: Reset hệ thống
 
@@ -226,127 +226,130 @@ Node-RED thực hiện:
 
 | Output | Trạng thái | Vai trò |
 |---|---|---|
-| Servo van gas | OPEN/CLOSED | Mô phỏng đóng nguồn gas khi nguy hiểm |
-| Quạt | ON/OFF | Thông gió |
-| Buzzer | ON/OFF | Cảnh báo tại chỗ |
-| Telegram | Message | Cảnh báo từ xa |
-| Dashboard | Values/State | Theo dõi dữ liệu và trạng thái |
+| Servo mở cửa sổ mini sa bàn | CLOSED (0°) / OPEN (90°) | Mô phỏng mở cửa sổ thông thoáng đối lưu không khí khi nguy cấp |
+| 3 LED (Xanh, Vàng, Đỏ) | ON / OFF / BLINK | Hiển thị trực quan 3 mức trạng thái và chế độ khôi phục/lỗi |
+| Buzzer | OFF / BEEP / ON | Cảnh báo âm thanh tại chỗ (không phụ thuộc vào mạng) |
+| Dashboard UI | Gauge / Cards / Table | Theo dõi trực quan và gửi lệnh điều khiển an toàn |
+| Telegram Bot | Message cảnh báo | Nhận thông báo khẩn cấp từ xa khi có bùng phát rò rỉ gas |
 
 ---
 
 <a id="section-5"></a>
-# 5. Logic tự động V1
+# 5. Logic tự động V2 hiện hành
 
 ## 5.1. State Machine đề xuất
 
-### NORMAL
-
-- Gas: bình thường.
-- Air quality: bình thường.
-- Valve: OPEN.
-- Fan: OFF.
+### NORMAL (Bình thường)
+- Gas: `< 1500` ADC.
+- LED: Xanh ON, Vàng/Đỏ OFF.
+- Servo Cửa sổ: CLOSED (0°).
 - Buzzer: OFF.
 
-### AIR_WARNING
+### WARNING (Cảnh báo sớm)
+- Gas: `1500 <= Gas < 2500` ADC.
+- LED: Vàng ON, Xanh/Đỏ OFF.
+- Servo Cửa sổ: CLOSED (0°).
+- Buzzer: Kêu ngắt quãng (300ms ON / 700ms OFF).
 
-- MQ135 vượt ngưỡng chất lượng không khí.
-- Valve: OPEN.
-- Fan: ON.
-- Buzzer: OFF hoặc cảnh báo nhẹ tùy thiết kế cuối.
-- Publish warning event.
+### DANGER (Nguy hiểm khẩn cấp)
+- Gas: `>= 2500` ADC.
+- LED: Đỏ ON, Xanh/Vàng OFF.
+- Servo Cửa sổ: Tự động MỞ (90°) để thông thoáng.
+- Buzzer: Kêu liên tục cảnh báo sơ tán.
 
-### GAS_WARNING
+### RECOVERY (Hồi phục có điều kiện)
+- Gas: Đã giảm xuống `< 2200` ADC từ mức DANGER.
+- LED: Vàng nhấp nháy (500ms).
+- Servo Cửa sổ: **Tiếp tục GIỮ MỞ (90°)** để đảm bảo an toàn, không tự động đóng lại.
+- Buzzer: Bíp chậm định kỳ báo hiệu đang chờ con người kiểm tra và xác nhận Reset an toàn.
 
-- MQ2 tăng đến vùng cảnh báo nhưng chưa đạt mức nguy hiểm.
-- Fan: ON.
-- Publish warning event.
-- Valve/Buzzer phụ thuộc rule sau calibration.
+### FAULT (Lỗi cảm biến / Đứt dây)
+- Gas: Tín hiệu chạm đáy (`<= 25`) hoặc kịch trần (`>= 4075`) duy trì trên 2 giây.
+- LED: Đỏ nhấp nháy nhanh (200ms).
+- Servo Cửa sổ: Giữ nguyên vị trí hiện tại.
 
-### DANGER
 
-- MQ2 đạt ngưỡng nguy hiểm.
-- Valve: CLOSED.
-- Fan: ON.
-- Buzzer: ON.
-- Publish critical event.
-- Gửi Telegram.
-- Remote command không được phép mở valve trực tiếp.
+## 5.2. Priority Rule (Thứ tự ưu tiên)
 
-### RECOVERY
+Thứ tự ưu tiên xử lý của hệ thống an toàn:
 
-- Sensor đã giảm nhưng chưa đủ điều kiện reset.
-- Valve tiếp tục CLOSED.
-- Fan tiếp tục ON trong thời gian làm sạch.
-- Chỉ trở về NORMAL khi dữ liệu an toàn ổn định và có điều kiện reset phù hợp.
+`FAULT >= DANGER > RECOVERY > WARNING > NORMAL`
 
-## 5.2. Priority Rule
+Nếu trạng thái lỗi cảm biến hoặc nguy hiểm xuất hiện, hệ thống lập tức ưu tiên cảnh báo còi và mở cửa sổ, chặn đứng các lệnh điều khiển đóng cửa từ xa.
 
-Thứ tự ưu tiên:
-
-`DANGER > GAS_WARNING > AIR_WARNING > NORMAL`
-
-Nếu nhiều điều kiện xuất hiện đồng thời, trạng thái có mức nguy hiểm cao hơn quyết định actuator.
-
-## 5.3. Pseudocode logic
+## 5.3. Pseudocode logic V2
 
 ```text
-read gas_value
-read air_value
-filter values
+raw_gas = read_adc(GPIO34)
+filtered_gas = moving_average_filter(raw_gas)
 
-if gas_value >= GAS_DANGER:
+if is_out_of_bounds(raw_gas):
+    state = FAULT
+    led = RED_BLINK
+    buzzer = BEEP_FAST
+    window = HOLD_POSITION
+
+else if filtered_gas >= DANGER_THRESHOLD (2500):
     state = DANGER
-    valve = CLOSED
-    fan = ON
-    buzzer = ON
+    led = RED
+    buzzer = CONTINUOUS_ON
+    window = OPEN (90°)
 
-else if gas_value >= GAS_WARNING:
-    state = GAS_WARNING
-    fan = ON
+else if state == DANGER and filtered_gas < DANGER_EXIT (2200):
+    state = RECOVERY
+    led = YELLOW_BLINK
+    buzzer = CHIRP_SLOW
+    window = KEEP_OPEN (90°)  // Giữ mở chờ xác nhận an toàn
 
-else if air_value >= AQ_WARNING:
-    state = AIR_WARNING
-    fan = ON
+else if state == RECOVERY:
+    if command == "REQUEST_RESET" and filtered_gas < SAFE_THRESHOLD (1300):
+        state = NORMAL
+        window = CLOSED (0°)
+    else:
+        window = KEEP_OPEN (90°)  // Bác bỏ reset nếu gas còn cao
 
-else:
+else if filtered_gas >= WARNING_THRESHOLD (1500):
+    state = WARNING
+    led = YELLOW
+    buzzer = BEEP_INTERMITTENT
+    window = CLOSED (0°)
+
+else if filtered_gas < WARNING_EXIT (1300):
     state = NORMAL
-    fan = OFF
+    led = GREEN
     buzzer = OFF
-    valve = OPEN only when safety-reset condition is satisfied
+    window = CLOSED (0°)
 
-publish telemetry periodically
-publish event when state changes
+publish_telemetry_periodically(2000ms)
+publish_event_immediately_on_state_change()
 ```
-
-> Chưa chốt giá trị `GAS_WARNING`, `GAS_DANGER`, `AQ_WARNING` ở Tuần 1. Các giá trị này phải được định nghĩa/calibrate ở Tuần 3. Trong Tuần 2 có thể dùng giá trị ADC giả lập để kiểm tra logic.
 
 ---
 
 <a id="section-6"></a>
-# 6. Kiến trúc IoT 4 tầng – Version 1
+# 6. Kiến trúc IoT 4 tầng – GasCheck V2
 
 ## 6.1. Kiến trúc logic
 
 ```mermaid
 flowchart LR
     subgraph L1["TẦNG 1 – SENSING / PHYSICAL"]
-        MQ2[MQ2 Gas/Smoke]
-        MQ135[MQ135 Air Quality]
-        ESP32[ESP32 Firmware + Local Safety Rule]
-        SERVO[Servo - Van gas mô phỏng]
-        FAN[Fan]
-        BUZZER[Buzzer]
+        MQ2["MQ2 Gas Sensor (AO)"]
+        ESP32["ESP32 Firmware + Local Safety FSM"]
+        LED["3 LED (Xanh, Vàng, Đỏ)"]
+        BUZZER["Buzzer Cảnh báo"]
+        SERVO["Servo SG90 - Mở cửa sổ sa bàn"]
         MQ2 --> ESP32
-        MQ135 --> ESP32
-        ESP32 --> SERVO
-        ESP32 --> FAN
+        ESP32 --> LED
         ESP32 --> BUZZER
+        ESP32 --> SERVO
     end
 
     subgraph L2["TẦNG 2 – NETWORK / CONNECTIVITY"]
-        WIFI[Wi-Fi]
-        MQTT[MQTT Broker]
+        WIFI["Wi-Fi STA"]
+        MQTT["MQTT Broker (HiveMQ:1883)"]
     end
+
 
     subgraph L3["TẦNG 3 – MIDDLEWARE"]
         NR[Node-RED]
@@ -445,11 +448,11 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
   "gas_raw": 0,
   "air_raw": 0,
   "state": "NORMAL",
-  "valve": "OPEN",
-  "fan": "OFF",
-  "buzzer": "OFF",
+  "window": "CLOSED",
+  "buzzer": false,
+  "led": "GREEN",
   "wifi": true,
-  "uptime_ms": 0
+  "uptime_sec": 120
 }
 ```
 
@@ -457,11 +460,12 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
 
 ```json
 {
-  "type": "GAS_DANGER",
-  "severity": "CRITICAL",
-  "value": 0,
-  "threshold": 0,
-  "state": "DANGER"
+  "device_id": "n19-gascheck-01",
+  "event": "STATE_CHANGED",
+  "from_state": "WARNING",
+  "to_state": "DANGER",
+  "gas_filtered": 2580,
+  "timestamp_ms": 45000
 }
 ```
 
@@ -469,32 +473,30 @@ Kiến trúc phải chạy được trên simulation trước. Hardware thật c
 
 ```json
 {
-  "action": "RESET_SAFE_STATE"
+  "cmd": "REQUEST_RESET"
 }
 ```
 
 ---
 
 <a id="section-8"></a>
-# 8. BOM dự kiến
+# 8. BOM dự kiến (Chuẩn V2)
 
-## 8.1. BOM phần cứng / mô phỏng
+## 8.1. BOM phần cứng / mô phỏng V2
 
 | STT | Thành phần | SL | Mục đích | Bắt buộc |
 |---:|---|---:|---|---|
-| 1 | ESP32 DevKit | 1 | Controller + Wi-Fi/MQTT | Có |
-| 2 | MQ2 gas/smoke sensor/module | 1 | Input gas/khói | Có về mặt chức năng |
-| 3 | MQ135 air quality sensor/module | 1 | Input chất lượng không khí | Có về mặt chức năng |
-| 4 | Servo SG90 hoặc actuator tương đương | 1 | Mô phỏng van gas | Có |
-| 5 | Fan/DC motor hoặc output mô phỏng tương đương | 1 | Thông gió | Có |
-| 6 | Buzzer | 1 | Cảnh báo local | Có |
-| 7 | LED trạng thái | 2–3 | Debug/hiển thị state | Tùy chọn |
-| 8 | Breadboard + jumper | 1 bộ | Hardware bonus | Tùy chọn |
-| 9 | Driver transistor/MOSFET/relay + diode bảo vệ | 1 bộ | Điều khiển fan thật | Chỉ nếu làm hardware |
-| 10 | Mạch chia áp phù hợp | Theo thiết kế | Bảo vệ ADC ESP32 khi module analog có điện áp cao hơn mức ADC cho phép | Chỉ nếu làm hardware |
-| 11 | Nguồn phù hợp | 1 | Cấp nguồn | Chỉ nếu làm hardware |
+| 1 | Bo mạch ESP32 DevKit V4 | 1 | Vi điều khiển trung tâm + Wi-Fi/MQTT | Có |
+| 2 | Cảm biến khí Gas MQ2 (hoặc biến trở 10k giả lập trên Wokwi) | 1 | Đầu vào phát hiện nồng độ gas/khói qua ADC1 (GPIO34) | Có |
+| 3 | Động cơ Servo mini SG90 | 1 | Điều khiển mở cửa sổ mini sa bàn (GPIO18 PWM) | Có |
+| 4 | Còi báo động (Buzzer) | 1 | Cảnh báo âm thanh tại chỗ (GPIO23) | Có |
+| 5 | LED trạng thái (Xanh, Vàng, Đỏ) | 3 | Báo 3 mức: Normal, Warning, Danger/Fault (GPIO25, 26, 27) | Có |
+| 6 | Điện trở hạn dòng 220Ω – 330Ω | 3 | Bảo vệ 3 LED không bị quá dòng | Có |
+| 7 | Bộ cọc đấu dây vít ren & Dây nối | 1 bộ | Đấu nối phân phối nguồn 5V/GND gọn gàng | Có |
+| 8 | Nguồn 5V và cáp kết nối | 1 | Cấp nguồn ổn định dòng tải cho ESP32 và Servo | Có |
 
-> Nếu Wokwi/Tinkercad không có đúng MQ2/MQ135, nhóm có thể dùng potentiometer/input analog hoặc custom component để mô phỏng tín hiệu cảm biến, miễn demo được **input thay đổi → processing → actuator phản ứng** và tài liệu giải thích rõ sự thay thế.
+> **Thành phần ĐÃ LOẠI BỎ khỏi đề tài (V2):** Không dùng cảm biến MQ135, không dùng quạt thông gió, không dùng relay, và không dùng servo điều khiển van gas.
+
 
 ## 8.2. BOM phần mềm/dịch vụ
 

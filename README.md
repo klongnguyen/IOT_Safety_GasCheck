@@ -159,26 +159,36 @@ Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đ�
 | Nguyễn Long Vỹ | Application / Automation — Dashboard, Telegram, QA |
 
 <a id="tai-lieu"></a>
-## 7. Tài liệu và báo cáo
+## 7. Tài liệu, Báo cáo & Deliverables
 
-| Tài liệu | Mục đích |
-|---|---|
-| [Thiết kế vật lý & kiến trúc GasCheck V2](docs/KienTrucVatLy_GasCheck_V2.md) | **Nguồn tham chiếu hiện hành** cho phần cứng, an toàn, trạng thái và 4 tầng |
-| [Sơ đồ chân đề xuất V2](docs/wiring/Pinout_V2.md) | GPIO, nguồn và kiểm tra điện |
-| [Kế hoạch Tuần 2 — V2](docs/KeHoachTuan02.md) | Việc cần làm và test case phiên bản mới |
-| [Kế hoạch tổng thể — baseline V1](docs/KeHoachTongThe.md) | Tài liệu kế hoạch gốc; phần linh kiện/logic V1 đã được thay thế |
-| [Báo cáo Tuần 1 — baseline V1](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) | Bằng chứng thiết kế gốc, giữ lịch sử |
-| [Thư mục báo cáo hằng tuần](Bao%20cao%20hang%20tuan/) | Các báo cáo theo từng milestone |
+| Hạng mục | Đường dẫn | Nội dung & Vai trò |
+|---|---|---|
+| **Báo cáo Tuần 1** | [Baocaodoan_Tuan01.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) | Phân tích bài toán, Use cases, BOM, Sơ đồ 4 tầng, Phân công nhóm |
+| **Báo cáo Tuần 2** | [Baocaodoan_Tuan02.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan02.md) | **Milestone M1**: Simulation Tầng 1 (Sensing/Physical), Sơ đồ nối dây, Ma trận test |
+| **Báo cáo Tuần 3** | [Baocaodoan_Tuan03.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan03.md) | Firmware & Embedded logic: Bộ lọc MA 10 mẫu, FSM 5 trạng thái, Hysteresis, Safety Interlock |
+| **Báo cáo Tuần 4** | [Baocaodoan_Tuan04.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan04.md) | **Milestone M2**: Connected Device, Chứng minh Uplink & Downlink qua MQTT, Log hai chiều |
+| **Báo cáo Tuần 5** | [Baocaodoan_Tuan05.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan05.md) | Tầng 3 Middleware: Node-RED flows, 4 Automation Rules, Event History, Downlink Dispatcher |
+| **Mô phỏng Wokwi** | [simulation/](simulation/) | [diagram.json](simulation/diagram.json), [sketch.ino](simulation/sketch.ino), [Hướng dẫn chạy](simulation/README.md) |
+| **Mã nguồn ESP32** | [firmware/](firmware/) | PlatformIO project: [config.h](firmware/include/config.h), [state_machine.h](firmware/include/state_machine.h), [main.cpp](firmware/src/main.cpp) |
+| **Đặc tả MQTT** | [docs/MQTT_Topic_Map.md](docs/MQTT_Topic_Map.md) | Bản đồ Topic, QoS, JSON Schema cho Telemetry, Event, Status, Command |
+| **Công cụ MQTTX** | [mqttx/](mqttx/) | [Kịch bản mẫu](mqttx/mqttx_scenario.json), [Hướng dẫn thao tác tay chi tiết](mqttx/README.md) |
+| **Middleware Node-RED**| [nodered/](nodered/) | [flows.json](nodered/flows.json) (31 nodes), [Hướng dẫn cài đặt & Dashboard](nodered/README.md) |
+| **Kiến trúc V2** | [docs/KienTrucVatLy_GasCheck_V2.md](docs/KienTrucVatLy_GasCheck_V2.md) | Đặc tả thiết kế hiện hành |
+| **Sơ đồ chân Pinout** | [docs/wiring/Pinout_V2.md](docs/wiring/Pinout_V2.md) | GPIO, nguồn và lưu ý điện áp ADC |
 
 <a id="trang-thai"></a>
 ## 8. Trạng thái triển khai
 
-- [x] Chốt thay đổi kiến trúc vật lý V2 và bổ sung tài liệu GitHub.
-- [ ] Xác nhận phạm vi rút MQ135 với giảng viên nếu tiêu chí đề tài yêu cầu chất lượng không khí.
-- [ ] Mạch Wokwi/sa bàn thực tế hoạt động.
-- [ ] Firmware và test các trạng thái.
-- [ ] MQTT Broker, Node-RED, Dashboard, Telegram chạy end-to-end.
-- [ ] Kiểm thử tình huống bất thường và nghiệm thu.
+- [x] **Tuần 1:** Chốt kiến trúc 4 tầng, Use Case, BOM dự kiến và phân công nhóm.
+- [x] **Tuần 2 (Milestone M1):** Dựng circuit Wokwi đầy đủ (ESP32, biến trở gas MQ2, 3 LED, buzzer, servo cửa sổ), sensor/actuator chạy đúng yêu cầu.
+- [x] **Tuần 3:** Firmware hoàn chỉnh với lọc nhiễu trung bình động, FSM 5 trạng thái, Hysteresis, Safety Latch, Serial JSON logging.
+- [x] **Tuần 4 (Milestone M2):** Tầng 2 Network, chứng minh Uplink (Telemetry/Event) và Downlink (Command/Interlock) qua MQTT, kiểm thử với MQTTX.
+- [x] **Tuần 5:** Tầng 3 Middleware Node-RED, import flow 31 nodes, 4 Automation Rules, lưu trữ nhật ký sự kiện và Dashboard giám sát trực quan.
+- [ ] **Tuần 6:** Hoàn thiện Tầng 4 (Application Platform & Telegram Bot Alert).
+- [ ] **Tuần 7:** Kiểm thử tình huống bất thường (mất mạng, sensor rail, ngắt nguồn, lệnh nguy hiểm).
+- [ ] **Tuần 8:** Tích hợp End-to-End toàn diện.
+- [ ] **Tuần 9:** Báo cáo tổng kết, video demo và tối ưu hệ thống.
+- [ ] **Tuần 10:** Nghiệm thu chung cuộc đề tài.
 
 <a id="an-toan"></a>
 ## 9. Giới hạn an toàn
@@ -186,3 +196,4 @@ Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đ�
 > **Prototype phục vụ học tập, KHÔNG phải hệ thống bảo vệ an toàn gas đã chứng nhận.** Không dùng khí gas thật để tạo tình huống rò rỉ khi demo; dùng potentiometer hoặc tín hiệu giả lập. MQ2/ESP32, buzzer, servo, cọc đấu dây tự lắp không được xem là thiết bị an toàn trong môi trường có khí dễ cháy. Servo motor có thể là nguồn đánh lửa; cơ cấu mở cửa sổ bằng servo chỉ phù hợp cho sa bàn không có gas thật. Trong một hệ thống thực tế cần giải pháp phát hiện và ứng phó được đánh giá/chứng nhận phù hợp, không được mặc định bật động cơ hay đóng/ngắt điện khi có rò rỉ.
 
 **Phương pháp triển khai:** Simulation-First → Local Logic → MQTT/Node-RED → Application → E2E Testing.
+
