@@ -12,10 +12,11 @@
 - [3. Mô hình vật lý và BOM](#mo-hinh-vat-ly)
 - [4. Nguyên lý hoạt động](#nguyen-ly)
 - [5. Giao tiếp MQTT và ứng dụng](#mqtt)
-- [6. Lộ trình và phân công](#lo-trinh)
-- [7. Tài liệu và báo cáo](#tai-lieu)
-- [8. Trạng thái triển khai](#trang-thai)
-- [9. Giới hạn an toàn](#an-toan)
+- [6. Hướng dẫn cài đặt và sử dụng (Quick Start)](#cai-dat-su-dung)
+- [7. Lộ trình và phân công](#lo-trinh)
+- [8. Tài liệu và báo cáo](#tai-lieu)
+- [9. Trạng thái triển khai](#trang-thai)
+- [10. Giới hạn an toàn](#an-toan)
 
 <a id="tong-quan"></a>
 ## 1. Tổng quan và phạm vi
@@ -136,10 +137,69 @@ Payload mẫu:
 }
 ```
 
-Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đã triển khai phần mềm.
+Các topic và lệnh đang ở mức **đặc tả**, đã được kiểm chứng hoạt động hoàn chỉnh qua MQTTX, Wokwi và WebApp.
+
+<a id="cai-dat-su-dung"></a>
+## 6. Hướng dẫn cài đặt và sử dụng (Quick Start)
+
+> **💡 Lưu ý quan trọng cho cả nhóm:** Hệ thống sử dụng Public Cloud Broker (`broker.hivemq.com:1883`), do đó **hoàn toàn KHÔNG cần cài đặt hay chạy MQTT Server (như Mosquitto) trên máy tính cá nhân**. Mọi thành viên chỉ cần có kết nối Internet là có thể chạy Wokwi và WebApp đồng bộ tức thì!
+
+Chi tiết đầy đủ xem thêm tại: **[docs/TEAM_QUICKSTART.md](docs/TEAM_QUICKSTART.md)**.
+
+### Bước 1: Clone dự án về máy
+```bash
+git clone https://github.com/klongnguyen/IOT_Safety_GasCheck.git
+cd IOT_Safety_GasCheck
+```
+
+### Bước 2: Chạy ESP32 mô phỏng trên Wokwi (Tầng 1 & Tầng 2)
+1. Mở trình duyệt truy cập: [https://wokwi.com/projects/new/esp32](https://wokwi.com/projects/new/esp32).
+2. **Nạp sơ đồ mạch:** Mở file [simulation/diagram.json](simulation/diagram.json), copy toàn bộ và dán đè vào tab `diagram.json` trên Wokwi.
+3. **Thêm thư viện:** Vào tab **Library Manager** (biểu tượng cuốn sách) thêm 3 thư viện:
+   ```text
+   ESP32Servo
+   PubSubClient
+   ArduinoJson
+   ```
+4. **Nạp mã nguồn:** Mở file [simulation/sketch.ino](simulation/sketch.ino), copy toàn bộ và dán đè vào tab `sketch.ino`.
+5. **Bấm Play:** Bấm nút **Start Simulation** màu xanh lá. Khi Serial Monitor in ra `[MQTT] Ket noi thanh cong!`, ESP32 ảo đã bắt đầu gửi dữ liệu cảm biến lên đám mây.
+
+### Bước 3: Chạy giao diện Web Dashboard (Tầng 4)
+1. Mở terminal tại thư mục dự án:
+   ```bash
+   cd webapp
+   ```
+2. Tạo file cấu hình môi trường `.env`:
+   ```bash
+   # Windows PowerShell:
+   Copy-Item .env.example .env
+
+   # Linux/macOS/Git Bash:
+   cp .env.example .env
+   ```
+3. Cài đặt thư viện & chạy ứng dụng:
+   ```bash
+   npm install --legacy-peer-deps
+   npm run dev
+   ```
+4. Mở trình duyệt truy cập: **`http://localhost:3000`**. Giao diện sẽ hiển thị ở chế độ **LIVE**, tự động nhận dữ liệu thời gian thực từ Wokwi mỗi 2 giây!
+
+### Bước 4: (Tùy chọn) Soi gói tin qua MQTTX hoặc chạy Node-RED
+- **MQTTX:** Kết nối tới `broker.hivemq.com:1883`, subscribe `gascheck/n19/#` để xem telemetry, hoặc publish `{"cmd": "REQUEST_RESET"}` vào `gascheck/n19/cmd`.
+- **Node-RED:** Chạy `node-red` trên máy, import file [nodered/flows.json](nodered/flows.json), bấm Deploy và truy cập `http://localhost:1880/ui`.
+
+### Kịch bản phối hợp Demo toàn diện (E2E Walkthrough)
+1. **Trạng thái bình thường:** Để biến trở Wokwi ở mức thấp (`ADC < 1500`) ➔ LED Xanh sáng, Còi tắt, Cửa sổ đóng (0°), WebApp báo `NORMAL` an toàn.
+2. **Sự cố rò rỉ:** Vặn biến trở Wokwi lên cao (`ADC >= 2500`) ➔ LED Đỏ sáng, Còi hú, **Servo tự MỞ CỬA SỔ 90°**, WebApp viền đỏ hú còi báo động (`DANGER`).
+3. **Nồng độ giảm - Khóa an toàn:** Vặn biến trở Wokwi giảm xuống (`ADC < 1300`) ➔ ESP32 chuyển sang `RECOVERY`, LED Vàng nhấp nháy, **Cửa sổ VẪN MỞ 90°**, WebApp hiện nút màu vàng **[XÁC NHẬN AN TOÀN & ĐÓNG CỬA SỔ (RESET)]**.
+4. **Khôi phục an toàn:** Bấm nút **[XÁC NHẬN AN TOÀN]** trên WebApp ➔ Lệnh gửi qua MQTT xuống ESP32, Servo **ĐÓNG CỬA SỔ về 0°**, hệ thống chuyển lại `NORMAL` màu xanh!
+
+### ⚠️ Lưu ý tránh trùng kênh (Topic Collision) khi làm việc nhóm
+- **Khi demo chung:** 1 bạn bật Wokwi phát dữ liệu, các bạn còn lại chỉ cần mở WebApp `http://localhost:3000` trên máy mình để cùng xem và điều khiển đồng bộ.
+- **Khi mỗi bạn tự test độc lập tại nhà:** Mở `sketch.ino` và `webapp/.env`, đổi tiền tố topic thành tên mình (ví dụ `gascheck/n19_an/...`, `gascheck/n19_long/...`) để tránh dữ liệu bị gián đoạn.
 
 <a id="lo-trinh"></a>
-## 6. Lộ trình và phân công
+## 7. Lộ trình và phân công
 
 | Tuần | Trọng tâm |
 |---|---|
@@ -161,10 +221,11 @@ Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đ�
 | Nguyễn Long Vỹ | Application / Automation — Dashboard, Telegram, QA |
 
 <a id="tai-lieu"></a>
-## 7. Tài liệu, Báo cáo & Deliverables
+## 8. Tài liệu, Báo cáo & Deliverables
 
 | Hạng mục | Đường dẫn | Nội dung & Vai trò |
 |---|---|---|
+| **Hướng dẫn nhanh cho nhóm** | [docs/TEAM_QUICKSTART.md](docs/TEAM_QUICKSTART.md) | **Cẩm nang chạy E2E Wokwi, MQTT, WebApp trong 5 phút** |
 | **Báo cáo Tuần 1** | [Baocaodoan_Tuan01.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan01.md) | Phân tích bài toán, Use cases, BOM, Sơ đồ 4 tầng, Phân công nhóm |
 | **Báo cáo Tuần 2** | [Baocaodoan_Tuan02.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan02.md) | **Milestone M1**: Simulation Tầng 1 (Sensing/Physical), Sơ đồ nối dây, Ma trận test |
 | **Báo cáo Tuần 3** | [Baocaodoan_Tuan03.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan03.md) | Firmware & Embedded logic: Bộ lọc MA 10 mẫu, FSM 5 trạng thái, Hysteresis, Safety Interlock |
@@ -172,6 +233,7 @@ Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đ�
 | **Báo cáo Tuần 5** | [Baocaodoan_Tuan05.md](Bao%20cao%20hang%20tuan/Baocaodoan_Tuan05.md) | Tầng 3 Middleware: Node-RED flows, 4 Automation Rules, Event History, Downlink Dispatcher |
 | **Mô phỏng Wokwi** | [simulation/](simulation/) | [diagram.json](simulation/diagram.json), [sketch.ino](simulation/sketch.ino), [Hướng dẫn chạy](simulation/README.md) |
 | **Mã nguồn ESP32** | [firmware/](firmware/) | PlatformIO project: [config.h](firmware/include/config.h), [state_machine.h](firmware/include/state_machine.h), [main.cpp](firmware/src/main.cpp) |
+| **Ứng dụng Web Dashboard** | [webapp/](webapp/) | Full-stack React + Express + MQTT Live Dashboard, [Hướng dẫn chạy](webapp/README.md) |
 | **Đặc tả MQTT** | [docs/MQTT_Topic_Map.md](docs/MQTT_Topic_Map.md) | Bản đồ Topic, QoS, JSON Schema cho Telemetry, Event, Status, Command |
 | **Công cụ MQTTX** | [mqttx/](mqttx/) | [Kịch bản mẫu](mqttx/mqttx_scenario.json), [Hướng dẫn thao tác tay chi tiết](mqttx/README.md) |
 | **Middleware Node-RED**| [nodered/](nodered/) | [flows.json](nodered/flows.json) (31 nodes), [Hướng dẫn cài đặt & Dashboard](nodered/README.md) |
@@ -179,23 +241,24 @@ Các topic và lệnh đang ở mức **đặc tả**, chưa khẳng định đ�
 | **Sơ đồ chân Pinout** | [docs/wiring/Pinout_V2.md](docs/wiring/Pinout_V2.md) | GPIO, nguồn và lưu ý điện áp ADC |
 
 <a id="trang-thai"></a>
-## 8. Trạng thái triển khai
+## 9. Trạng thái triển khai
 
 - [x] **Tuần 1:** Chốt kiến trúc 4 tầng, Use Case, BOM dự kiến và phân công nhóm.
 - [x] **Tuần 2 (Milestone M1):** Dựng circuit Wokwi đầy đủ (ESP32, biến trở gas MQ2, 3 LED, buzzer, servo cửa sổ), sensor/actuator chạy đúng yêu cầu.
 - [x] **Tuần 3:** Firmware hoàn chỉnh với lọc nhiễu trung bình động, FSM 5 trạng thái, Hysteresis, Safety Latch, Serial JSON logging.
 - [x] **Tuần 4 (Milestone M2):** Tầng 2 Network, chứng minh Uplink (Telemetry/Event) và Downlink (Command/Interlock) qua MQTT, kiểm thử với MQTTX.
 - [x] **Tuần 5:** Tầng 3 Middleware Node-RED, import flow 31 nodes, 4 Automation Rules, lưu trữ nhật ký sự kiện và Dashboard giám sát trực quan.
-- [ ] **Tuần 6:** Hoàn thiện Tầng 4 (Application Platform & Telegram Bot Alert).
+- [x] **Tuần 6 (Sớm):** Hoàn thiện Tầng 4 (Application Platform Full-Stack React WebApp tích hợp MQTT Live).
 - [ ] **Tuần 7:** Kiểm thử tình huống bất thường (mất mạng, sensor rail, ngắt nguồn, lệnh nguy hiểm).
 - [ ] **Tuần 8:** Tích hợp End-to-End toàn diện.
 - [ ] **Tuần 9:** Báo cáo tổng kết, video demo và tối ưu hệ thống.
 - [ ] **Tuần 10:** Nghiệm thu chung cuộc đề tài.
 
 <a id="an-toan"></a>
-## 9. Giới hạn an toàn
+## 10. Giới hạn an toàn
 
 > **Prototype phục vụ học tập, KHÔNG phải hệ thống bảo vệ an toàn gas đã chứng nhận.** Không dùng khí gas thật để tạo tình huống rò rỉ khi demo; dùng potentiometer hoặc tín hiệu giả lập. MQ2/ESP32, buzzer, servo, cọc đấu dây tự lắp không được xem là thiết bị an toàn trong môi trường có khí dễ cháy. Servo motor có thể là nguồn đánh lửa; cơ cấu mở cửa sổ bằng servo chỉ phù hợp cho sa bàn không có gas thật. Trong một hệ thống thực tế cần giải pháp phát hiện và ứng phó được đánh giá/chứng nhận phù hợp, không được mặc định bật động cơ hay đóng/ngắt điện khi có rò rỉ.
 
 **Phương pháp triển khai:** Simulation-First → Local Logic → MQTT/Node-RED → Application → E2E Testing.
+
 
