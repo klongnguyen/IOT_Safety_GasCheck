@@ -1,7 +1,9 @@
 # 🛡️ IOT-Safety-GasCheck
 
 > **GasCheck V2 — Mô hình IoT phát hiện và cảnh báo rò rỉ khí gas, mô phỏng mở cửa sổ tự động**  
-> Nhóm N19 · Đề tài 06 · Safety · **Thiết kế vật lý cập nhật: 17/10/2026**
+> Nhóm N19 · Đề tài 06 · Safety · **Thiết kế vật lý cập nhật: 17/10/2026**  
+> 
+> 🚀 **Dành cho thành viên nhóm:** Xem ngay **[HƯỚNG DẪN TRIỂN KHAI & SỬ DỤNG DỰ ÁN (QUICKSTART)](docs/TEAM_QUICKSTART.md)** để chạy thử Wokwi, MQTT và WebApp trong 5 phút!
 
 ## Mục lục
 
